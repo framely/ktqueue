@@ -1,0 +1,23 @@
+body {
+  padding: 0 1em  ;
+  margin: 0;
+}
+#tq-header {
+}
+#tq-title {
+  vertical-align: middle;
+  line-height: 60px;
+  float: left;
+  margin: 0 2em 0 1em;
+}
+.table-header {
+  padding: .5em 0;
+}
+.table-header .el-pagination {
+  display: inline-block;
+}
+.inline-form-span {
+  width: 1em;
+  height: 1em;
+  float: left;
+}

@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>KTQueue</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-default/index.css">
+    <link rel="stylesheet" href="/static/ktqueue.css">
+
+  </head>
+  <style>
+    [v-cloak] {
+      display: none !important;
+    }
+  </style>
+<body>
+  <div id="app" v-cloak>
+    <div id="tq-header">
+    </div>
+    <el-menu :default-active="$route.path" mode="horizontal" :router="true">
+      <h2 id="tq-title">KTQueue</h2>
+      <el-menu-item index="/jobs">Jobs</el-menu-item>
+      <el-menu-item index="/repos">Repos</el-menu-item>
+    </el-menu>
+    <router-view></router-view>
+  </div>
+<script type="text/x-template" id="tq-jobs-template">
+  <div>
+    <div class="table-header">
+      <el-button size="small" type="primary" @click="createJobDialog.visible = true">Create Job</el-button>
+      <el-pagination
+        layout="prev, pager, next"
+        :page-size="jobsData.page_size"
+        :total="jobsData.total"
+        @current-change="loadJobs"
+        >
+      </el-pagination>
+    </div>
+    <el-table
+      :data="jobsData.data"
+      style="width: 100%"
+      v-loading="jobsData.loading">
+      <el-table-column type="expand">
+       <template scope="scope">
+         <p><label>name: </label>{{ scope.row.name }}</p>
+         <p><label>repo: </label>{{ scope.row.repo }}</p>
+         <p><label>commit_id: </label>{{ scope.row.commit_id }}</p>
+         <p><label>command: </label>{{ scope.row.command }}</p>
+         <p v-if="scope.row.tensorboard">
+          <a :href="'/tensorboard/' + scope.row.name + '/'">TensorBoard</a>
+         </p>
+
+       </template>
+      </el-table-column>
+      <el-table-column
+        label="Clone"
+        width="80">
+        <template scope="scope">
+          <el-button @click="copyJob(scope.$index, jobsData.data)" type="text" size="small">Clone</el-button>
+        </template>
+      </el-table-column>
+      <el-table-column
+        label="Stop"
+        width="80">
+        <template scope="scope">
+          <template>
+            <el-button type="text" @click="stopJob(scope.$index, jobsData.data)">Stop</el-button>
+          </template>
+        </template>
+      </el-table-column>
+      <el-table-column
+        prop="name"
+        label="name"
+        width="180"
+        :show-overflow-tooltip="true">
+      </el-table-column>
+      <el-table-column
+        prop="repo"
+        label="repo"
+        :show-overflow-tooltip="true">
+      </el-table-column>
+      <el-table-column
+        prop="status"
+        label="status"
+        width="240"
+        :show-overflow-tooltip="true">
+      </el-table-column>
+      <el-table-column
+        prop="gpu_num"
+        label="GPUs"
+        width="100"
+        align="center">
+      </el-table-column>
+      <el-table-column
+        label="creation">
+        <template scope="scope">
+          <span :title="moment(scope.row.creationTimestamp).fromNow()">{{scope.row.creationTimestamp ? moment(scope.row.creationTimestamp).format('YYYY-MM-DD HH:mm:SS'): ''}}</span>
+        </template>
+      </el-table-column>
+      <el-table-column
+        label="Board"
+        width="100">
+        <template scope="scope">
+          <el-button v-if="scope.row.tensorboard" @click="stopBoard(scope.$index, jobsData.data)" type="text" size="small">Stop</el-button>
+          <el-button v-else @click="startBoard(scope.$index, jobsData.data)" type="text" size="small">Start</el-button>
+        </template>
+      </el-table-column>
+      <el-table-column
+        label="Log"
+        width="100">
+        <template scope="scope">
+          <el-button @click="viewLog(scope.$index, jobsData.data)" type="text" size="small">Log</el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+    <el-dialog :title="createJobDialog.title" v-model="createJobDialog.visible" size="large">
+      <el-form ref="form" :model="createJobDialog.data" label-width="80px">
+        <el-form-item label="Name">
+         <el-input v-model="createJobDialog.data.name"></el-input>
+        </el-form-item>
+        <el-form-item label="Node">
+          <el-select v-model="createJobDialog.data.node" clearable placeholder="Any">
+            <el-option
+              v-for="item in nodes"
+              :label="item.labels['kubernetes.io/hostname']"
+              :value="item.labels['kubernetes.io/hostname']">
+            </el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="GPUs">
+         <el-input-number v-model="createJobDialog.data.gpu_num"></el-input-number>
+        </el-form-item>
+        <el-form-item label="Command">
+         <el-input type="textarea" :rows=3 v-model="createJobDialog.data.command"></el-input>
+        </el-form-item>
+        <el-form-item label="Image">
+         <el-input v-model="createJobDialog.data.image"></el-input>
+        </el-form-item>
+        <el-form-item label="Repo">
+          <el-autocomplete v-model="createJobDialog.data.repo"
+          :fetch-suggestions="repoQuerySearch"
+          style="width: 100%"></el-autocomplete>
+        </el-form-item>
+        <el-form-item label="Commit id">
+         <el-input v-model="createJobDialog.data.commit_id"></el-input>
+        </el-form-item>
+        <el-form-item v-for="(volume, index) in createJobDialog.data.volumeMounts"  :key="volume.key" :label="'Volume'" :rules="{
+            required: true, message: 'volumeMounts should not be empty', trigger: 'blur'
+          }">
+          <el-col :span="10">
+            <el-form-item>
+              <el-input placeholder="hostPath" v-model="volume.hostPath" style="width: 100%;"></el-input>
+            </el-form-item>
+          </el-col>
+          <span class="inline-form-span"> </span>
+          <el-col :span="10">
+           <el-form-item>
+             <el-input placeholder="mountPath" v-model="volume.mountPath" style="width: 100%;"></el-input>
+           </el-form-item>
+          </el-col>
+          <span class="inline-form-span"> </span>
+          <el-button @click.prevent="removeVolume(volume)">删除</el-button>
+        </el-form-item>
+        <el-form-item>
+          <el-button @click="addVolumeMount">Add volume</el-button>
+        </el-form-item>
+
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="createJobDialog.visible = false">取 消</el-button>
+        <el-button type="primary" @click="createJob">确 定</el-button>
+      </span>
+    </el-dialog>
+  </div>
+</script>
+
+<script type="text/x-template" id="tq-repos-template">
+  <div>
+    <div class="table-header">
+      <el-button size="small" type="primary" @click="createRepoDialog.visible = true">Create Repo</el-button>
+      <el-pagination
+        layout="prev, pager, next"
+        :page-size="reposData.page_size"
+        :total="reposData.total"
+        @current-change="loadRepos"
+        >
+      </el-pagination>
+    </div>
+    <el-table
+      :data="reposData.data"
+      style="width: 100%"
+      v-loading="reposData.loading">
+      <el-table-column
+        prop="repo"
+        label="repo"
+        :show-overflow-tooltip="true">
+      </el-table-column>
+    </el-table>
+    <el-dialog :title="createRepoDialog.title" v-model="createRepoDialog.visible" size="large">
+      <el-form ref="form" :model="createRepoDialog.data" label-width="80px">
+        <el-form-item label="Repo">
+         <el-input v-model="createRepoDialog.data.repo"></el-input>
+        </el-form-item>
+        <el-form-item label="ssh_key">
+         <el-input type="textarea" :rows=3 v-model="createRepoDialog.data.ssh_key"></el-input>
+        </el-form-item>
+        <el-form-item label="Username">
+         <el-input v-model="createRepoDialog.data.username"></el-input>
+        </el-form-item>
+        <el-form-item label="Password">
+         <el-input v-model="createRepoDialog.data.password"></el-input>
+        </el-form-item>
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="createRepoDialog.visible = false">取 消</el-button>
+        <el-button type="primary" @click="createRepo">确 定</el-button>
+      </span>
+    </el-dialog>
+  </div>
+</script>
+<script type="text/x-template" id="tq-job-log-template">
+  <div>
+    <pre>{{log_text}}</pre>
+  </div>
+</script>
+</body>
+<script src="https://unpkg.com/vue/dist/vue.js"></script>
+<script src="https://unpkg.com/vue-resource@1.2.0/dist/vue-resource.min.js"></script>
+<script src="https://unpkg.com/vue-router/dist/vue-router.js"></script>
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<script src="https://cdn.bootcss.com/moment.js/2.17.1/moment.js"></script>
+<script>
+  var Jobs = Vue.component('tq-jobs', {
+    template: '#tq-jobs-template',
+    data: function(){
+      return {
+        jobsData: {
+          count: 0,
+          page_size: 20,
+          page: 1,
+          loading: false,
+          data: []
+        },
+        createJobDialog: {
+          visible: false,
+          title: 'Create Job',
+          data: {
+            name: '',
+            node: null,
+            gpu_num: 1,
+            command: '',
+            image: '',
+            repo: '',
+            commit_id: '',
+            volumeMounts: [],
+          }
+        },
+        repos: [],
+        nodes: []
+      }
+    },
+    mounted:function() {
+      this.loadJobs(1);
+      this.$http.get('/repos?page_size=0&repo_only=1').then(function(resource){
+        for (var i = 0; i < resource.body.data.length; i++){
+          this.repos.push({"value": resource.body.data[i].repo});
+        }
+      });
+      this.$http.get('/nodes').then(function(resource){
+        this.nodes = resource.body.items;
+      });
+    },
+    methods: {
+      moment: moment,
+      copyJob: function(index, tableData) {
+        var line = tableData[index];
+        Object.assign(this.createJobDialog.data, line);
+        this.createJobDialog.visible = true;
+      },
+      stopJob: function(index, tableData) {
+        var job_name = tableData[index].name;
+        var $this = this;
+        this.$confirm('Do you really want to stop ' + job_name + '?', 'Stop job', {
+          confirmButtonText: 'Confirm',
+          cancelButtonText: 'Cancel',
+          type: 'warning'
+        }).then(function() {
+          $this.$http.post('/job/stop/' + job_name, {}).then(function(resource){
+            $this.$message({
+              type: 'success',
+              message: job_name + ' stopped!'
+            });
+            $this.loadJobs(1);
+            $this.createJobDialog.visible=false;
+          });
+        }).catch(function() {
+          $this.$message({
+            type: 'info',
+            message: 'Cancel.'
+          });
+        });
+      },
+      startBoard: function(index, tableData) {
+        var line = tableData[index];
+        var $this = this;
+        this.$prompt('Please enter logdir. You can use $JOB_NAME, $WORK_DIR, $OUTPUT_DIR', 'TensorBoard', {
+          confirmButtonText: 'Confirm',
+          cancelButtonText: 'Cancel',
+        }).then(function(data) {
+          $this.$http.post('/job/tensorboard/' + line.name, {'logdir': data.value}).then(function(){
+            $this.loadJobs($this.jobsData.page);
+          })
+        }).catch(function() {
+
+        });
+      },
+      stopBoard: function(index, tableData) {
+        var line = tableData[index];
+        var $this = this;
+        this.$http.delete('/job/tensorboard/' + line.name).then(function(){
+          $this.loadJobs($this.jobsData.page);
+          this.$message({
+            type: 'info',
+            message: 'TensorBoard stopped.'
+          });
+        })
+      },
+      loadJobs: function(page) {
+        this.jobsData.loading=true;
+        this.$http.get('/jobs?page=' + page).then(function(resource){
+          for (var i = 0; i < resource.body.data.length; i++){
+            var line = resource.body.data[i];
+            if (line['creationTimestamp']) {
+              // line['creationTimestamp'] = new Date(line['creationTimestamp'])
+            }
+          }
+          resource.body.loading=false;
+          this.jobsData = resource.body;
+        })
+      },
+      createJob: function() {
+        this.$http.post("/jobs", this.createJobDialog.data).then(function(resource){
+          this.loadJobs(1);
+          this.createJobDialog.visible=false;
+        })
+      },
+      viewLog: function(index, tableData) {
+        var job_name = tableData[index].name;
+        this.$router.push('/jobs/' + job_name + '/log');
+      },
+      repoQuerySearch: function(queryString, cb) {
+        var repos = this.repos;
+        var results = queryString ? repos.filter(this.createFilter(queryString)) : repos;
+        console.log(results);
+        cb(results);
+      },
+      createFilter: function(queryString) {
+        return function(candidate) {
+          return (candidate.value.indexOf(queryString.toLowerCase()) !== -1);
+        };
+      },
+      addVolumeMount: function() {
+        this.createJobDialog.data.volumeMounts.push({
+          hostPath: '',
+          mountPath: '',
+          key: Date.now()
+        })
+      },
+      removeVolume: function(volume) {
+        var index = this.createJobDialog.data.volumeMounts.indexOf(volume)
+        if (index !== -1) {
+          this.createJobDialog.data.volumeMounts.splice(index, 1)
+        }
+      }
+    }
+  });
+  var Repos = Vue.component('tq-repos', {
+      template: '#tq-repos-template',
+      data: function(){
+        return {
+          reposData: {
+            count: 0,
+            page_size: 20,
+            page: 1,
+            loading: false,
+            data: []
+          },
+          createRepoDialog: {
+            visible: false,
+            title: 'Create Repo',
+            data: {
+              repo: '',
+              ssh_key: '',
+              username: '',
+              password: '',
+            }
+          }
+        }
+      },
+      mounted:function() {
+        this.loadRepos(1);
+      },
+      methods: {
+        loadRepos: function(page) {
+          this.reposData.loading=true;
+          this.$http.get("/repos?page=" + page).then(function(resource){
+            resource.body.loading=false;
+            this.reposData = resource.body;
+          })
+        },
+        createRepo: function() {
+          this.$http.post("/repos", this.createRepoDialog.data).then(function(resource){
+            this.loadRepos(1);
+            this.createRepoDialog.visible=false;
+          })
+        }
+      }
+  });
+  var JobLog = Vue.component('tq-job-log', {
+    template: '#tq-job-log-template',
+    data: function(){
+      return {
+        log_text: '',
+      }
+    },
+    mounted:function() {
+      this.loadJobLog(this.$route.params.job_name);
+    },
+    methods: {
+      loadJobLog: function(job_name){
+        this.$http.get('/jobs/' + job_name + '/log').then(function(resource){
+          this.log_text = resource.body;
+        })
+      }
+    }
+  });
+
+  new Vue({
+    el: '#app',
+    router: new VueRouter({
+      routes:  [
+        { path: '/', redirect: '/jobs' },
+        { path: '/jobs', component: Jobs },
+        { path: '/jobs/:job_name/log', component: JobLog },
+        { path: '/repos', component: Repos }
+      ]
+    }),
+  })
+</script>
+</html>

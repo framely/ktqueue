@@ -1,0 +1,70 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ktqueue
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: ktqueue
+  labels:
+    app: ktqueue
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ktqueue
+  template:
+    metadata:
+      labels:
+        app: ktqueue
+    spec:
+      nodeSelector:
+        beta.kubernetes.io/arch: amd64
+      serviceAccountName: ktqueue
+      containers:
+      - name: ktqueue
+        image: ktqueue
+        imagePullPolicy: IfNotPresent
+        command: [ "python3", "/ktqueue/server.py" ]
+        volumeMounts:
+        - name: cephfs
+          mountPath: /cephfs
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        securityContext:
+          privileged: true
+      volumes:
+      - name: 'cephfs'
+        hostPath:
+          path: /mnt/cephfs
+        # cephfs:
+        #   monitors:
+        #   - localhost:6789
+        #   user: admin
+        #   secretRef:
+        #     name: ceph-secret
+        #   readOnly: false
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    app: ktqueue
+  name: ktqueue
+  namespace: default
+spec:
+  type: NodePort
+  ports:
+  - port: 80
+    targetPort: 8080
+  selector:
+    app: ktqueue
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ktqueue

@@ -140,7 +140,15 @@ class JobsHandler(tornado.web.RequestHandler):
                                     },
                                     {
                                         'name': 'WORK_DIR',
-                                        'value': os.path.join(job_dir, 'code'),
+                                        'value': os.path.join(job_dir, 'code')
+                                    },
+                                    {
+                                        'name': 'LC_ALL',
+                                        'value': 'en_US.UTF-8'
+                                    },
+                                    {
+                                        'name': 'LC_CTYPE',
+                                        'value': 'en_US.UTF-8'
                                     },
                                 ]
                             }

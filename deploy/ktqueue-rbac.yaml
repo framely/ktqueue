@@ -1,0 +1,26 @@
+# Create the clusterrole:
+# $ kubectl create -f ktqueue-rbac.yaml
+# Bind the ktqueue serviceaccount to the ktqueue clusterrole:
+# $ kubectl create clusterrolebinding ktqueue --clusterrole=ktqueue --serviceaccount=default:ktqueue
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: ktqueue
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs: ["*"]
+  - apiGroups:
+      - ""
+    resources:
+      - nodes
+    verbs:
+      - list
+  - apiGroups:
+      - ""
+    resources:
+      - jobs
+    verbs: ["*"]

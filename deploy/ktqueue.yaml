@@ -22,6 +22,7 @@ spec:
     spec:
       nodeSelector:
         beta.kubernetes.io/arch: amd64
+        #kubernetes.io/hostname: host_name_you_want
       serviceAccountName: ktqueue
       containers:
       - name: ktqueue
@@ -61,6 +62,8 @@ spec:
   ports:
   - port: 80
     targetPort: 8080
+  # externalIPs:
+  #   - ip_you_want_to_access_form_outside
   selector:
     app: ktqueue
 ---

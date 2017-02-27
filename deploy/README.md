@@ -80,6 +80,13 @@ so you should ensure that cephfs has been mounted at `/mnt/cephfs` on ensure eve
 
 you should modify `fstab` and add cephfs mount.
 
+## build image
+
+> docker build -t ktqueue .
+
+you can modify `dep-ktqueue.yaml`(see next step)and change image name if you want.
+
+
 ## deploy
 
 > cp ktqueue.yaml dep-ktqueue.yaml

@@ -12,6 +12,7 @@ rules:
       - ""
     resources:
       - pods
+      - pods/log
     verbs: ["*"]
   - apiGroups:
       - ""

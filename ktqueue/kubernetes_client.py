@@ -1,5 +1,6 @@
 # encoding: utf-8
 import os
+import logging
 import aiohttp
 import kubernetes
 import json
@@ -47,7 +48,15 @@ class kubernetes_client:
 
     async def call_api(self, api, method='GET', **kwargs):
         resp = await self.call_api_raw(api=api, method=method, **kwargs)
-        return json.loads(await resp.text())
+        text = await resp.text()
+        try:
+            result = json.loads(text)
+        except Exception as e:
+            print(api, method, kwargs)
+            print(text)
+            raise
+        else:
+            return result
 
     async def call_api_raw(self, api, method='GET', **kwargs):
         session = kwargs.pop('session', self.session)

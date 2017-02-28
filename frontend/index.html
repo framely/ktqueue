@@ -50,7 +50,6 @@
          <p v-if="scope.row.tensorboard">
           <a :href="'/tensorboard/' + scope.row.name + '/'">TensorBoard</a>
          </p>
-
        </template>
       </el-table-column>
       <el-table-column
@@ -221,6 +220,14 @@
 </script>
 <script type="text/x-template" id="tq-job-log-template">
   <div>
+    <el-select v-model="selected_version" placeholder="" @change="versionChange">
+      <el-option label="current" value="current"></el-option>
+      <el-option
+        v-for="version in versions"
+        :label="version"
+        :value="version">
+      </el-option>
+    </el-select>
     <pre>{{log_text}}</pre>
   </div>
 </script>
@@ -422,19 +429,33 @@
     data: function(){
       return {
         log_text: '',
+        selected_version: 'current',
+        versions: [],
       }
     },
     mounted:function() {
-      this.loadJobLog(this.$route.params.job_name);
+      this.loadJobLogVersions(this.$route.params.job_name);
+      this.loadJobLog(this.$route.params.job_name, 'current');
     },
     methods: {
-      loadJobLog: function(job_name){
-        this.$http.get('/jobs/' + job_name + '/log').then(function(resource){
+      loadJobLog: function(job_name, version){
+        this.$http.get('/jobs/' + job_name + '/log/' + version ).then(function(resource){
           this.log_text = resource.body;
         }).catch(function(response) {
           this.$message.error('Unable to load Log!\n');
           console.error(response.body);
         });
+      },
+      loadJobLogVersions: function(job_name) {
+        this.$http.get('/jobs/' + job_name + '/log/version').then(function(resource){
+          this.versions = resource.body.versions;
+        }).catch(function(response) {
+          this.$message.error('Unable to load Log versions!\n');
+          console.error(response.body);
+        });
+      },
+      versionChange: function(version) {
+        this.loadJobLog(this.$route.params.job_name, version);
       }
     }
   });

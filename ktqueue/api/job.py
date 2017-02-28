@@ -207,6 +207,17 @@ class JobsHandler(tornado.web.RequestHandler):
         }))
 
 
+class JobLogVersionHandler(tornado.web.RequestHandler):
+    @convert_asyncio_task
+    async def get(self, job):
+        from ktqueue.utils import get_log_versions
+        versions = get_log_versions(job)
+        self.write({
+            'job': job,
+            'versions': versions
+        })
+
+
 class JobLogHandler(tornado.web.RequestHandler):
 
     def initialize(self, k8s_client, mongo_client):
@@ -215,7 +226,11 @@ class JobLogHandler(tornado.web.RequestHandler):
         self.jobs_collection = mongo_client.ktqueue.jobs
 
     @convert_asyncio_task
-    async def get(self, job):
+    async def get(self, job, version=None):
+        if version and int(version):
+            with open(os.path.join('/cephfs/ktqueue/logs', job, 'log.{version}.txt'.format(version=version)), 'r') as f:
+                self.finish(f.read())
+            return
         pods = await self.k8s_client.call_api(
             method='GET',
             api='/api/v1/namespaces/{namespace}/pods'.format(namespace=settings.job_namespace),

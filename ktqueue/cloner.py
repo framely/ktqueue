@@ -15,14 +15,18 @@ class Cloner:
 
     __https_pattern = re.compile(r'https:\/\/(\w+@\w+)?[\w.\/]*.git')
     __ssh_pattern = re.compile(r'\w+@[\w.]+:\w+\/\w+\.git')
+    __ref_pattern = re.compile(r'(?P<hash>\w+)\s(?P<ref>[\w/\-]+)')
 
-    def __init__(self, repo, commit_id, dst_directory):
+    def __init__(self, repo, dst_directory, branch='master', commit_id=None):
         self.repo = repo.strip()
-        self.commit_id = commit_id
         self.dst_directory = dst_directory
+        self.branch = branch
+        self.commit_id = commit_id
 
         self.mongo_client = pymongo.MongoClient('ktqueue-mongodb')
         self.ssh_key_path = None
+        self.repo_path = None
+        self.repo_url = None
 
         if self.__ssh_pattern.match(repo):
             self.repo_type = 'ssh'
@@ -81,49 +85,72 @@ class Cloner:
         recode = await proc.wait()
         return recode, lines
 
+    async def get_heads(self):
+        proc = await asyncio.create_subprocess_exec(*['git', 'show-ref'], stdout=asyncio.subprocess.PIPE, cwd=self.repo_path)
+        heads = {}
+        async for line in proc.stdout:
+            logging.debug(line)
+            group = self.__ref_pattern.search(line.decode())
+            if group:
+                heads[group.group('ref')] = group.group('hash')
+        return heads
+
+    async def clone(self):
+        if self.repo_type == 'ssh':
+            retcode, retlines = await self.git_with_ssh_key(
+                ssh_key_path=self.ssh_key_path,
+                cwd='/cephfs/ktqueue/repos',
+                args=['clone', self.repo, '--recursive', self.repo_hash],
+
+            )
+        else:
+            retcode, retlines = await self.git_with_https(
+                cwd='/cephfs/ktqueue/repos',
+                args=['clone', self.repo_url, '--recursive', self.repo_hash],
+            )
+        if retcode != 0:
+            raise Exception('clone repo failed with retcode {}.'.format(retcode))
+
+    async def fetch(self):
+        if self.repo_type == 'ssh':
+            retcode, retlines = await self.git_with_ssh_key(
+                ssh_key_path=self.ssh_key_path,
+                cwd=self.repo_path,
+                args=['fetch'],
+            )
+        else:
+            retcode, retlines = await self.git_with_https(
+                cwd=self.repo_path,
+                args=['fetch'],
+            )
+        if retcode != 0:
+            logging.error('fetch repo failed with retcode {}.'.format(retcode))
+
     async def clone_and_copy(self, archive_file=None, keep_archive=False):
         if not os.path.exists('/cephfs/ktqueue/repos'):
             os.makedirs('/cephfs/ktqueue/repos')
-        repo_path = os.path.join('/cephfs/ktqueue/repos', self.repo_hash)
+        self.repo_path = os.path.join('/cephfs/ktqueue/repos', self.repo_hash)
 
         if self.repo_type == 'ssh':
             await self.prepare_ssh_key(self.repo)
         elif self.repo_type == 'https':
             credential = self.mongo_client.ktqueue.credentials.find_one({'repo': self.repo})
-            repo_url = self.repo
+            self.repo_url = self.repo
             if credential:
-                repo_url = self.add_credential_to_https_url(
+                self.repo_url = self.add_credential_to_https_url(
                     self.repo, username=credential['username'], password=credential['password'])
 
-        if not os.path.exists(repo_path):  # Then clone it
-            if self.repo_type == 'ssh':
-                retcode, retlines = await self.git_with_ssh_key(
-                    ssh_key_path=self.ssh_key_path,
-                    cwd='/cephfs/ktqueue/repos',
-                    args=['clone', self.repo, '--recursive', self.repo_hash],
-
-                )
-            else:
-                retcode, retlines = await self.git_with_https(
-                    cwd='/cephfs/ktqueue/repos',
-                    args=['clone', repo_url, '--recursive', self.repo_hash],
-                )
-            if retcode != 0:
-                logging.error('clone repo failed with retcode {}.'.format(retcode))
+        if not os.path.exists(self.repo_path):  # Then clone it
+            await self.clone()
         else:
-            if self.repo_type == 'ssh':
-                retcode, retlines = await self.git_with_ssh_key(
-                    ssh_key_path=self.ssh_key_path,
-                    cwd=repo_path,
-                    args=['fetch'],
-                )
-            else:
-                retcode, retlines = await self.git_with_https(
-                    cwd=repo_path,
-                    args=['fetch'],
-                )
-            if retcode != 0:
-                logging.error('fetch repo failed with retcode {}.'.format(retcode))
+            await self.fetch()
+
+        # get commit_id
+        if not self.commit_id and self.branch:
+            heads = await self.get_heads()
+            self.commit_id = heads.get('refs/remotes/origin/{branch}'.format(branch=self.branch), None)
+            if not self.commit_id:
+                raise Exception('Branch {branch} not found for {repo}.'.format(branch=self.branch, repo=self.repo))
 
         if not os.path.exists('/cephfs/ktqueue/repo_archive'):
             os.makedirs('/cephfs/ktqueue/repo_archive')
@@ -134,7 +161,7 @@ class Cloner:
         logging.info('Arciving {}:{}'.format(self.repo, self.commit_id))
         with open(archive_file, 'wb') as f:
             proc = await asyncio.create_subprocess_exec(*['git', 'archive', self.commit_id, '--forma', 'tar.gz'],
-                                                        stdout=f, cwd=repo_path)
+                                                        stdout=f, cwd=self.repo_path)
             retcode = await proc.wait()
             if retcode != 0:
                 logging.error('Arcive repo failed with retcode {}'.format(retcode))

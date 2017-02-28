@@ -45,6 +45,7 @@
        <template scope="scope">
          <div class="job-expand-item"><label>name: </label><div>{{ scope.row.name }}</div></div>
          <div class="job-expand-item"><label>repo: </label><div>{{ scope.row.repo }}</div></div>
+         <div class="job-expand-item"><label>branch: </label><div>{{ scope.row.branch }}</div></div>
          <div class="job-expand-item"><label>commit_id: </label><div>{{ scope.row.commit_id }}</div></div>
          <div class="job-expand-item"><label>command: </label><div>{{ scope.row.command }}</div></div>
          <p v-if="scope.row.tensorboard">
@@ -142,6 +143,9 @@
           :fetch-suggestions="repoQuerySearch"
           style="width: 100%"></el-autocomplete>
         </el-form-item>
+        <el-form-item label="Branch">
+         <el-input v-model="createJobDialog.data.branch"></el-input>
+        </el-form-item>
         <el-form-item label="Commit id">
          <el-input v-model="createJobDialog.data.commit_id"></el-input>
         </el-form-item>
@@ -238,7 +242,6 @@
 <script src="https://unpkg.com/vue-resource@1.2.0/dist/vue-resource.min.js"></script>
 <script src="https://unpkg.com/vue-router/dist/vue-router.js"></script>
 <script src="https://unpkg.com/element-ui/lib/index.js"></script>
-<script src="https://unpkg.com/element-ui/lib/loading.js"></script>
 <script src="https://cdn.bootcss.com/moment.js/2.17.1/moment.js"></script>
 <script>
   var Jobs = Vue.component('tq-jobs', {
@@ -262,6 +265,7 @@
             command: '',
             image: '',
             repo: '',
+            branch: '',
             commit_id: '',
             volumeMounts: [],
           }
@@ -353,7 +357,10 @@
         this.$http.post("/jobs", this.createJobDialog.data).then(function(resource){
           this.loadJobs(1);
           this.createJobDialog.visible=false;
-        })
+        }).catch(function(response){
+          this.$message.error(response.body);
+          console.error(response.body);
+        });
       },
       viewLog: function(index, tableData) {
         var job_name = tableData[index].name;

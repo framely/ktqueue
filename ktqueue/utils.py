@@ -6,6 +6,8 @@ from ktqueue import settings
 
 def get_log_versions(job_name):
     log_dir = os.path.join('/cephfs/ktqueue/logs', job_name)
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
     versions = []
     for filename in os.listdir(log_dir):
         group = re.match(r'log\.(?P<id>\d+)\.txt', filename)

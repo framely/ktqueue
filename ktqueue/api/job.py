@@ -47,6 +47,7 @@ class JobsHandler(tornado.web.RequestHandler):
         gpu_num = int(body_arguments.get('gpu_num'))
         image = body_arguments.get('image')
         repo = body_arguments.get('repo', None)
+        branch = body_arguments.get('branch', None)
         commit_id = body_arguments.get('commit_id', None)
 
         command_kube = 'cd $WORK_DIR && ' + command
@@ -166,6 +167,7 @@ class JobsHandler(tornado.web.RequestHandler):
             'command': command,
             'gpu_num': gpu_num,
             'repo': repo,
+            'branch': branch,
             'commit_id': commit_id,
             'image': image,
             'status': 'fetching',
@@ -173,10 +175,14 @@ class JobsHandler(tornado.web.RequestHandler):
             'volumeMounts': body_arguments.get('volumeMounts', []),
         }}, upsert=True)
         self.finish(json.dumps({'message': 'job {} successful created.'.format(name)}))
+
         # clone code
-        if repo and commit_id:
-            cloner = Cloner(repo=repo, commit_id=commit_id, dst_directory=os.path.join(job_dir, 'code'))
+        if repo:
+            cloner = Cloner(repo=repo, dst_directory=os.path.join(job_dir, 'code'),
+                            branch=branch, commit_id=commit_id)
             await cloner.clone_and_copy()
+            if not commit_id:
+                self.jobs_collection.update_one({'name': name}, {'$set': {'commit_id': cloner.commit_id}})
 
         ret = await self.k8s_client.call_api(
             api='/apis/batch/v1/namespaces/{namespace}/jobs'.format(namespace=settings.job_namespace),
@@ -208,6 +214,7 @@ class JobsHandler(tornado.web.RequestHandler):
 
 
 class JobLogVersionHandler(tornado.web.RequestHandler):
+
     @convert_asyncio_task
     async def get(self, job):
         from ktqueue.utils import get_log_versions

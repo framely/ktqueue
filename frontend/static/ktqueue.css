@@ -21,3 +21,22 @@ body {
   height: 1em;
   float: left;
 }
+.job-expand-item {
+  margin-bottom: 10px;
+  overflow: auto;
+  zoom: 1;
+}
+.job-expand-item > label {
+  width: 100px;
+  float: left;
+  text-align: right;
+  padding-right: 1em;
+  box-sizing: border-box;
+}
+.job-expand-item > div {
+  margin-left: 100px;
+}
+.status-stop-wrap {
+  display: inline-block;
+  width: 32px;
+}

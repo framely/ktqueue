@@ -227,12 +227,13 @@ class JobLogHandler(tornado.web.RequestHandler):
                 method='GET',
                 api='/api/v1/namespaces/{namespace}/pods/{pod_name}/log'.format(namespace=settings.job_namespace, pod_name=pod_name)
             )
-            async for chunk in resp.content.iter_any():
-                self.write(chunk)
-            resp.close()
-        else:
-            with open(os.path.join('/cephfs/ktqueue/logs', job, 'log.txt'), 'r') as f:
-                self.finish(f.read())
+            if resp.status == 200:
+                async for chunk in resp.content.iter_any():
+                    self.write(chunk)
+                resp.close()
+                return
+        with open(os.path.join('/cephfs/ktqueue/logs', job, 'log.txt'), 'r') as f:
+            self.finish(f.read())
 
 
 class StopJobHandler(tornado.web.RequestHandler):

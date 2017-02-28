@@ -43,10 +43,10 @@
       v-loading="jobsData.loading">
       <el-table-column type="expand">
        <template scope="scope">
-         <p><label>name: </label>{{ scope.row.name }}</p>
-         <p><label>repo: </label>{{ scope.row.repo }}</p>
-         <p><label>commit_id: </label>{{ scope.row.commit_id }}</p>
-         <p><label>command: </label>{{ scope.row.command }}</p>
+         <div class="job-expand-item"><label>name: </label><div>{{ scope.row.name }}</div></div>
+         <div class="job-expand-item"><label>repo: </label><div>{{ scope.row.repo }}</div></div>
+         <div class="job-expand-item"><label>commit_id: </label><div>{{ scope.row.commit_id }}</div></div>
+         <div class="job-expand-item"><label>command: </label><div>{{ scope.row.command }}</div></div>
          <p v-if="scope.row.tensorboard">
           <a :href="'/tensorboard/' + scope.row.name + '/'">TensorBoard</a>
          </p>
@@ -61,30 +61,29 @@
         </template>
       </el-table-column>
       <el-table-column
-        label="Stop"
-        width="80">
+        prop="name"
+        label="name"
+        :show-overflow-tooltip="true">
+      </el-table-column>
+      <el-table-column
+        label="Node"
+        width="100">
         <template scope="scope">
-          <template>
-            <el-button type="text" @click="stopJob(scope.$index, jobsData.data)">Stop</el-button>
-          </template>
+          {{ scope.row.runningNode || '' }}
         </template>
       </el-table-column>
       <el-table-column
-        prop="name"
-        label="name"
-        width="180"
-        :show-overflow-tooltip="true">
-      </el-table-column>
-      <el-table-column
-        prop="repo"
-        label="repo"
-        :show-overflow-tooltip="true">
-      </el-table-column>
-      <el-table-column
-        prop="status"
         label="status"
-        width="240"
+        width="260"
+        header-align="center"
         :show-overflow-tooltip="true">
+        <template scope="scope">
+          <div class="status-stop-wrap">
+            <span v-if="scope.row.status.indexOf('Completed') != -1 || scope.row.status == 'ManualStop'"></span>
+            <el-button v-else  type="text" @click="stopJob(scope.$index, jobsData.data)">Stop</el-button>
+          </div>
+          <span>{{ scope.row.status}}</span>
+        </template>
       </el-table-column>
       <el-table-column
         prop="gpu_num"
@@ -93,7 +92,8 @@
         align="center">
       </el-table-column>
       <el-table-column
-        label="creation">
+        label="creation"
+        width="200">
         <template scope="scope">
           <span :title="moment(scope.row.creationTimestamp).fromNow()">{{scope.row.creationTimestamp ? moment(scope.row.creationTimestamp).format('YYYY-MM-DD HH:mm:SS'): ''}}</span>
         </template>
@@ -337,7 +337,7 @@
           }
           resource.body.loading=false;
           this.jobsData = resource.body;
-        })
+        });
       },
       createJob: function() {
         this.$http.post("/jobs", this.createJobDialog.data).then(function(resource){
@@ -431,7 +431,10 @@
       loadJobLog: function(job_name){
         this.$http.get('/jobs/' + job_name + '/log').then(function(resource){
           this.log_text = resource.body;
-        })
+        }).catch(function(response) {
+          this.$message.error('Unable to load Log!\n');
+          console.error(response.body);
+        });
       }
     }
   });

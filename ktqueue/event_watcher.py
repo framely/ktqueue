@@ -73,12 +73,27 @@ async def watch_pod(k8s_client):
             status = (k, v.get('reason', None))
             status_str = '{}: {}'.format(*status)
             continue
+
         logging.info('Job {} enter state {}'.format(job_name, status_str))
+
+        job_update = {
+            'state': state
+        }
+
+        # update status
+        if status == ('terminated', 'Completed'):
+            job_update['status'] = 'Completed'
+        else:
+            job_update['status'] = status_str
+
+        # update Running Node
+        if status[0] == 'terminated':
+            job_update['runningNode'] = None
+        elif event['object']['spec'].get('nodeName', None):
+            job_update['runningNode'] = event['object']['spec']['nodeName']
+
         if jobs_collection.find_one({'name': job_name})['status'] != 'ManualStop':
-            jobs_collection.update_one({'name': job_name}, {'$set': {
-                'status': status_str,
-                'state': state,
-            }})
+            jobs_collection.update_one({'name': job_name}, {'$set': job_update})
 
         # When a job is successful finished, save log and do not watch it any more
         if status[0] == 'terminated':

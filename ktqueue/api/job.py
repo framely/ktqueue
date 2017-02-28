@@ -227,7 +227,7 @@ class JobLogHandler(tornado.web.RequestHandler):
 
     @convert_asyncio_task
     async def get(self, job, version=None):
-        if version and int(version):
+        if version and version != 'current':
             with open(os.path.join('/cephfs/ktqueue/logs', job, 'log.{version}.txt'.format(version=version)), 'r') as f:
                 self.finish(f.read())
             return

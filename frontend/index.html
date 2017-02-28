@@ -123,7 +123,8 @@
             <el-option
               v-for="item in nodes"
               :label="item.labels['kubernetes.io/hostname']"
-              :value="item.labels['kubernetes.io/hostname']">
+              :value="item.labels['kubernetes.io/hostname']"
+              :key="item.labels['kubernetes.io/hostname']">
             </el-option>
           </el-select>
         </el-form-item>
@@ -221,14 +222,15 @@
 <script type="text/x-template" id="tq-job-log-template">
   <div>
     <el-select v-model="selected_version" placeholder="" @change="versionChange">
-      <el-option label="current" value="current"></el-option>
+      <el-option label="current" value="current" key="current"></el-option>
       <el-option
         v-for="version in versions"
         :label="version"
-        :value="version">
+        :value="version"
+        :key="version">
       </el-option>
     </el-select>
-    <pre>{{log_text}}</pre>
+    <pre class="ktq-log-text">{{log_text}}</pre>
   </div>
 </script>
 </body>
@@ -236,6 +238,7 @@
 <script src="https://unpkg.com/vue-resource@1.2.0/dist/vue-resource.min.js"></script>
 <script src="https://unpkg.com/vue-router/dist/vue-router.js"></script>
 <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<script src="https://unpkg.com/element-ui/lib/loading.js"></script>
 <script src="https://cdn.bootcss.com/moment.js/2.17.1/moment.js"></script>
 <script>
   var Jobs = Vue.component('tq-jobs', {
@@ -439,11 +442,17 @@
     },
     methods: {
       loadJobLog: function(job_name, version){
+        var loading = this.$loading({
+          target: '.ktq-log-text',
+          text: 'loading log'
+        })
         this.$http.get('/jobs/' + job_name + '/log/' + version ).then(function(resource){
           this.log_text = resource.body;
+          loading.close();
         }).catch(function(response) {
           this.$message.error('Unable to load Log!\n');
           console.error(response.body);
+          loading.close();
         });
       },
       loadJobLogVersions: function(job_name) {

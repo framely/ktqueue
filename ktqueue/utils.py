@@ -11,7 +11,7 @@ def get_log_versions(job_name):
         group = re.match(r'log\.(?P<id>\d+)\.txt', filename)
         if group:
             versions.append(int(group.group('id')))
-    return versions
+    return sorted(versions)
 
 
 async def save_job_log(job_name, pod_name, k8s_client):

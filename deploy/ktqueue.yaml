@@ -29,6 +29,19 @@ spec:
         image: ktqueue
         imagePullPolicy: IfNotPresent
         command: [ "python3", "/ktqueue/server.py" ]
+        env:
+        - name: KTQ_AUTH_REQUIRED
+          value: '0'
+        - name: KTQ_COOKIE_SECRET
+          value: ''
+        - name: KTQ_OAUTH2_PROVIDER
+          value: github
+        - name: KTQ_OAUTH2_CLIENT_ID
+          value: ''
+        - name: KTQ_OAUTH2_CLIENT_SECRET
+          value: ''
+        - name: KTQ_OAUTH2_CALLBACK
+          value: ''
         volumeMounts:
         - name: cephfs
           mountPath: /cephfs

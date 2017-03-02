@@ -7,3 +7,4 @@ from .job import JobLogVersionHandler
 from .repo import ReposHandler
 from .node import NodesHandler
 from .tensorboard_proxy import TensorBoardProxyHandler
+from .oauth import OAuth2Handler

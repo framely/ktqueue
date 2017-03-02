@@ -12,6 +12,7 @@ import tornado.autoreload
 from tornado.simple_httpclient import SimpleAsyncHTTPClient
 from tornado.platform.asyncio import AsyncIOMainLoop
 
+import ktqueue.settings
 from ktqueue.kubernetes_client import kubernetes_client
 from ktqueue.api import JobsHandler
 from ktqueue.api import JobLogHandler
@@ -21,6 +22,7 @@ from ktqueue.api import NodesHandler
 from ktqueue.api import StopJobHandler
 from ktqueue.api import TensorBoardProxyHandler
 from ktqueue.api import TensorBoardHandler
+from ktqueue.api import OAuth2Handler
 
 
 from ktqueue.event_watcher import watch_pod
@@ -34,12 +36,22 @@ __static_path = os.path.join(__frontend_path, 'static')
 def create_db_index():
     client = pymongo.MongoClient('ktqueue-mongodb')
     client.ktqueue.jobs.create_index([("name", pymongo.ASCENDING)], unique=True)
+    client.ktqueue.jobs.create_index([("hide", pymongo.ASCENDING)])
     client.ktqueue.credentials.create_index([("repo", pymongo.ASCENDING)], unique=True)
+    client.ktqueue.oauth.create_index([("provider", pymongo.ASCENDING), ("id", pymongo.ASCENDING)], unique=True)
 
 
 def get_app():
     k8s_client = kubernetes_client()
     mongo_client = pymongo.MongoClient('ktqueue-mongodb')
+
+    # other args to app
+    app_kwargs = {}
+    # debug
+    app_kwargs['debug'] = os.environ.get('KTQUEUE_DEBUG', '0') == '1'
+    # cookie_secret
+    if ktqueue.settings.auth_required:
+        app_kwargs['cookie_secret'] = ktqueue.settings.cookie_secret
     application = tornado.web.Application([
         (r'/()', tornado.web.StaticFileHandler, {
             'path': __frontend_path,
@@ -56,8 +68,10 @@ def get_app():
         (r'/static/(.*)', tornado.web.StaticFileHandler, {'path': __static_path}),
         (r'/tensorboard/(?P<job>[\w_\-\.]+)/(?P<url>.*)', TensorBoardProxyHandler, {'client': SimpleAsyncHTTPClient(max_clients=64)}),
         (r'/data/(?P<url>.*)', TensorBoardProxyHandler, {'client': SimpleAsyncHTTPClient(max_clients=64)}),  # This is a hack for TensorBoard
+        (r'/oauth2/start', OAuth2Handler, {'mongo_client': mongo_client}),
+        (r'/oauth2/callback', OAuth2Handler, {'mongo_client': mongo_client}),
 
-    ], debug=os.environ.get('KTQUEUE_DEBUG', '0') == '1')
+    ], **app_kwargs)
     return application
 
 

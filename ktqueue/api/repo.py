@@ -15,6 +15,7 @@ class ReposHandler(tornado.web.RequestHandler):
         self.mongo_client = mongo_client
         self.repos_collection = self.mongo_client.ktqueue.credentials
 
+    @tornado.web.authenticated
     async def post(self):
         """create a credential for repo, support both ssh & https.
             ssh e.x.:

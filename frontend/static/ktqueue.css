@@ -36,6 +36,9 @@ body {
 .job-expand-item > div {
   margin-left: 100px;
 }
+.job-expand-item > div > pre{
+  margin: 0;
+}
 .status-stop-wrap {
   display: inline-block;
   width: 32px;

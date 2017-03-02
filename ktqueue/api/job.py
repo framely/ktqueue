@@ -9,9 +9,10 @@ from ktqueue.cloner import Cloner
 from .utils import convert_asyncio_task
 from ktqueue.utils import save_job_log
 from ktqueue import settings
+from .utils import BaseHandler
 
 
-class JobsHandler(tornado.web.RequestHandler):
+class JobsHandler(BaseHandler):
 
     def initialize(self, k8s_client, mongo_client):
         self.k8s_client = k8s_client
@@ -19,6 +20,7 @@ class JobsHandler(tornado.web.RequestHandler):
         self.jobs_collection = mongo_client.ktqueue.jobs
 
     @convert_asyncio_task
+    @tornado.web.authenticated
     async def post(self):
         """
         Create a new job.
@@ -32,6 +34,8 @@ class JobsHandler(tornado.web.RequestHandler):
                 "commit_id": "3701b94219fb06974f485cabf99ad88019afe618"
             }
         """
+        user = self.get_current_user()
+
         body_arguments = json.loads(self.request.body.decode('utf-8'))
 
         name = body_arguments.get('name')
@@ -49,6 +53,7 @@ class JobsHandler(tornado.web.RequestHandler):
         repo = body_arguments.get('repo', None)
         branch = body_arguments.get('branch', None)
         commit_id = body_arguments.get('commit_id', None)
+        comments = body_arguments.get('comments', None)
 
         command_kube = 'cd $WORK_DIR && ' + command
 
@@ -164,11 +169,13 @@ class JobsHandler(tornado.web.RequestHandler):
         self.jobs_collection.update_one({'name': name}, {'$set': {
             'name': name,
             'node': node,
+            'user': user,
             'command': command,
             'gpu_num': gpu_num,
             'repo': repo,
             'branch': branch,
             'commit_id': commit_id,
+            'comments': comments,
             'image': image,
             'status': 'fetching',
             'tensorboard': False,
@@ -266,6 +273,7 @@ class StopJobHandler(tornado.web.RequestHandler):
         self.jobs_collection = mongo_client.ktqueue.jobs
 
     @convert_asyncio_task
+    @tornado.web.authenticated
     async def post(self, job):
         pods = await self.k8s_client.call_api(
             method='GET',
@@ -295,6 +303,7 @@ class TensorBoardHandler(tornado.web.RequestHandler):
         self.jobs_collection = mongo_client.ktqueue.jobs
 
     @convert_asyncio_task
+    @tornado.web.authenticated
     async def post(self, job):
         job_image = self.jobs_collection.find_one({'name': job})['image']
         body_arguments = json.loads(self.request.body.decode('utf-8'))
@@ -361,6 +370,7 @@ class TensorBoardHandler(tornado.web.RequestHandler):
         self.write(ret)
 
     @convert_asyncio_task
+    @tornado.web.authenticated
     async def delete(self, job):
         pods = await self.k8s_client.call_api(
             method='GET',

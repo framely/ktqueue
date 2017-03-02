@@ -1,6 +1,7 @@
 # encoding: utf-8
 import asyncio
 import functools
+import tornado.web
 
 
 def convert_asyncio_task(method):
@@ -10,3 +11,11 @@ def convert_asyncio_task(method):
         coro = method(self, *args, **kwargs)
         return await asyncio.get_event_loop().create_task(coro)
     return wrapper
+
+
+class BaseHandler(tornado.web.RequestHandler):
+    def get_current_user(self):
+        user = self.get_secure_cookie("user")
+        if user:
+            return user.decode('utf-8')
+        return None

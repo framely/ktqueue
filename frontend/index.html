@@ -20,8 +20,11 @@
     </div>
     <el-menu :default-active="$route.path" mode="horizontal" :router="true">
       <h2 id="tq-title">KTQueue</h2>
-      <el-menu-item index="/jobs">Jobs</el-menu-item>
-      <el-menu-item index="/repos">Repos</el-menu-item>
+      <el-menu-item index="/jobs" :route="{path: '/jobs'}">Jobs</el-menu-item>
+      <el-menu-item index="/repos" :route="{path: '/jobs'}">Repos</el-menu-item>
+      <el-menu-item v-if="current_user" index="current_user" :route="{}">{{current_user}}</el-menu-item>
+      <el-menu-item v-else index="login" :route="{}"><a href="/oauth2/start">Login</a></el-menu-item>
+
     </el-menu>
     <router-view></router-view>
   </div>
@@ -480,12 +483,25 @@
     el: '#app',
     router: new VueRouter({
       routes:  [
-        { path: '/', redirect: '/jobs' },
+        { path: '/', name: 'jobs', redirect: '/jobs' },
         { path: '/jobs', component: Jobs },
         { path: '/jobs/:job_name/log', component: JobLog },
-        { path: '/repos', component: Repos }
+        { path: '/repos', name: 'repos', component: Repos }
       ]
     }),
+    data: {
+      current_user: null,
+    },
+    mounted:function() {
+      this.loadCurrentUser();
+    },
+    methods: {
+      loadCurrentUser: function(){
+        this.$http.get('/current_user').then(function(resource){
+          this.current_user = resource.body.user;
+        })
+      },
+    }
   })
 </script>
 </html>

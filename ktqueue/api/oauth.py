@@ -6,7 +6,6 @@ import tornado.web
 import tornado.auth
 import tornado.httpclient
 
-
 import ktqueue.settings
 
 
@@ -59,6 +58,7 @@ class GithubOAuth2StartHandler(tornado.web.RequestHandler, tornado.auth.OAuth2Mi
                 {'$set': data},
                 upsert=True
             )
+            self.set_secure_cookie('user', resp['login'])
             self.redirect('/')
         else:
             await self.authorize_redirect(

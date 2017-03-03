@@ -32,6 +32,11 @@
   <div>
     <div class="table-header">
       <el-button size="small" type="primary" @click="checkAuth(), createJobDialog.visible = true">Create Job</el-button>
+      <el-radio-group v-model="jobsFilter" size="small" @change="jobsFilterChange">
+        <el-radio-button label="All"></el-radio-button>
+        <el-radio-button label="Hidden"></el-radio-button>
+        <el-radio-button label="Fav"></el-radio-button>
+      </el-radio-group>
       <el-pagination
         layout="prev, pager, next"
         :page-size="jobsData.page_size"
@@ -52,7 +57,17 @@
          <div class="job-expand-item"><label>commit_id: </label><div>{{ scope.row.commit_id }}</div></div>
          <div class="job-expand-item"><label>command: </label><div>{{ scope.row.command }}</div></div>
          <div class="job-expand-item"><label>comments: </label><div><pre>{{ scope.row.comments }}</pre></div></div>
-
+         <div class="job-expand-item"><label>Hide: </label>
+           <div>
+             <el-switch
+             v-model="scope.row.hide"
+             :width="70"
+             on-text="Hide"
+             off-text="Show"
+             @change="jobHideChange(scope.row, $event)">
+            </el-switch>
+          </div>
+         </div>
          <p v-if="scope.row.tensorboard">
           <a :href="'/tensorboard/' + scope.row.name + '/'">TensorBoard</a>
          </p>
@@ -63,6 +78,15 @@
         width="80">
         <template scope="scope">
           <el-button @click="copyJob(scope.$index, jobsData.data)" type="text" size="small">Clone</el-button>
+        </template>
+      </el-table-column>
+      <el-table-column
+        width="50">
+        <template scope="scope">
+          <el-button type="text" @click="toggleFavorite(scope.row, $event)">
+            <i v-if="scope.row.fav" class="el-icon-star-on"/>
+            <i v-else class="el-icon-star-off"/>
+          </el-button>
         </template>
       </el-table-column>
       <el-table-column
@@ -265,6 +289,7 @@
     },
     data: function(){
       return {
+        jobsFilter: 'All',
         jobsData: {
           count: 0,
           page_size: 20,
@@ -364,7 +389,14 @@
       },
       loadJobs: function(page) {
         this.jobsData.loading=true;
-        this.$http.get('/jobs?page=' + page).then(function(resource){
+        var params = {};
+        params['page'] = page;
+        if (this.jobsFilter === 'Hidden') {
+          params['hide'] = '1'
+        } else if (this.jobsFilter === 'Fav') {
+          params['fav'] = '1'
+        }
+        this.$http.get('/jobs', {params: params}).then(function(resource){
           for (var i = 0; i < resource.body.data.length; i++){
             var line = resource.body.data[i];
             if (line['creationTimestamp']) {
@@ -411,6 +443,34 @@
         if (index !== -1) {
           this.createJobDialog.data.volumeMounts.splice(index, 1)
         }
+      },
+      jobHideChange: function(line, event) {
+        this.$http.put('/jobs', {
+          '_id': line._id,
+          'hide': event
+        }).then(function(){
+          line.hide = event;
+        }).catch(function(){
+          line.hide = !event;
+        })
+        return !event;
+      },
+      toggleFavorite: function(line, event) {
+        var icon = event.target;
+        if (icon.tagName !== 'I') {
+          icon=icon.querySelector("i")
+        }
+        icon.className='el-icon-loading';
+        this.$http.put('/jobs', {
+          '_id': line._id,
+          'fav': !line.fav
+        }).then(function(){
+          line.fav = !line.fav;
+        }).catch(function(){
+        })
+      },
+      jobsFilterChange: function() {
+        this.loadJobs(1);
       }
     }
   });

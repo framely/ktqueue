@@ -1,7 +1,7 @@
 import os
 
 job_namespace = os.environ.get('KTQ_JOB_NAMESPACE', 'ktqueue')
-auth_required = os.environ.get('KTQ_AUTH_REQUIRED', False)
+auth_required = True if os.environ.get('KTQ_AUTH_REQUIRED', '0') == '1' else False
 cookie_secret = os.environ.get('KTQ_COOKIE_SECRET', '')
 oauth2_provider = os.environ.get('KTQ_OAUTH2_PROVIDER', 'github')
 oauth2_clinet_id = os.environ.get('KTQ_OAUTH2_CLIENT_ID', '')

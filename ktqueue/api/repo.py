@@ -5,8 +5,10 @@ import re
 
 import tornado.web
 
+from .utils import BaseHandler
 
-class ReposHandler(tornado.web.RequestHandler):
+
+class ReposHandler(BaseHandler):
 
     __https_pattern = re.compile(r'https:\/\/(\w+@\w+)?[\w.\/]*.git')
     __ssh_pattern = re.compile(r'\w+@[\w.]+:\w+\/\w+\.git')

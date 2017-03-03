@@ -16,6 +16,11 @@ body {
 .table-header .el-pagination {
   display: inline-block;
 }
+.table-header .el-pagination,
+.table-header .el-button,
+.table-header .el-radio-group {
+  vertical-align: middle;;
+}
 .inline-form-span {
   width: 1em;
   height: 1em;
@@ -32,6 +37,9 @@ body {
   text-align: right;
   padding-right: 1em;
   box-sizing: border-box;
+}
+.job-expand-item .el-tag+.el-tag {
+  margin-left: 1em;
 }
 .job-expand-item > div {
   margin-left: 100px;

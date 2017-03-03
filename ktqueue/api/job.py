@@ -2,6 +2,7 @@
 import json
 import os
 import logging
+import bson
 
 import tornado.web
 
@@ -208,8 +209,29 @@ class JobsHandler(BaseHandler):
     async def get(self):
         page = int(self.get_argument('page', 1))
         page_size = int(self.get_argument('page_size', 20))
-        count = self.jobs_collection.count()
-        jobs = list(self.jobs_collection.find().sort("_id", -1).skip(page_size * (page - 1)).limit(page_size))
+        hide = self.get_argument('hide', None)
+        fav = self.get_argument('fav', None)
+        tags = self.get_arguments('tag')
+
+        query = {}
+
+        # hide
+        if hide is None:  # default is False
+            query['hide'] = False
+        elif hide != 'all':  # 'all' means no filter
+            query['hide'] = False if hide == '0' else True
+
+        # tags
+        if tags:
+            query['tags': {'$all': tags}]
+
+        # fav
+        if fav:
+            query['fav'] = True if fav == '1' else False
+
+        print(query)
+        count = self.jobs_collection.count(query)
+        jobs = list(self.jobs_collection.find(query).sort("_id", -1).skip(page_size * (page - 1)).limit(page_size))
         for job in jobs:
             job['_id'] = str(job['_id'])
         self.finish(json.dumps({
@@ -218,6 +240,18 @@ class JobsHandler(BaseHandler):
             'page_size': page_size,
             'data': jobs,
         }))
+
+    @tornado.web.authenticated
+    async def put(self):
+        """modify job.
+            only part of fields can be modified.
+        """
+        body_arguments = json.loads(self.request.body.decode('utf-8'))
+        update_data = {k: v for k, v in body_arguments.items() if k in ('hide', 'comments', 'tags', 'fav')}
+        self.jobs_collection.update_one({'_id': bson.ObjectId(body_arguments['_id'])}, {'$set': update_data})
+        ret = self.jobs_collection.find_one({'_id': bson.ObjectId(body_arguments['_id'])})
+        ret['_id'] = str(ret['_id'])
+        self.finish(ret)
 
 
 class JobLogVersionHandler(tornado.web.RequestHandler):
@@ -232,7 +266,7 @@ class JobLogVersionHandler(tornado.web.RequestHandler):
         })
 
 
-class JobLogHandler(tornado.web.RequestHandler):
+class JobLogHandler(BaseHandler):
 
     def initialize(self, k8s_client, mongo_client):
         self.k8s_client = k8s_client
@@ -265,7 +299,7 @@ class JobLogHandler(tornado.web.RequestHandler):
             self.finish(f.read())
 
 
-class StopJobHandler(tornado.web.RequestHandler):
+class StopJobHandler(BaseHandler):
 
     def initialize(self, k8s_client, mongo_client):
         self.k8s_client = k8s_client

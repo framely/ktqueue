@@ -40,6 +40,8 @@ def create_db_index():
     client.ktqueue.jobs.create_index([("hide", pymongo.ASCENDING)])
     client.ktqueue.credentials.create_index([("repo", pymongo.ASCENDING)], unique=True)
     client.ktqueue.oauth.create_index([("provider", pymongo.ASCENDING), ("id", pymongo.ASCENDING)], unique=True)
+    client.ktqueue.jobs.update({'hide': {'$exists': False}}, {'$set': {'hide': False}})
+    client.ktqueue.jobs.update({'fav': {'$exists': False}}, {'$set': {'fav': False}})
 
 
 def get_app():
@@ -51,8 +53,7 @@ def get_app():
     # debug
     app_kwargs['debug'] = os.environ.get('KTQUEUE_DEBUG', '0') == '1'
     # cookie_secret
-    if ktqueue.settings.auth_required:
-        app_kwargs['cookie_secret'] = ktqueue.settings.cookie_secret
+    app_kwargs['cookie_secret'] = ktqueue.settings.cookie_secret
     application = tornado.web.Application([
         (r'/()', tornado.web.StaticFileHandler, {
             'path': __frontend_path,

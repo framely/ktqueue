@@ -40,8 +40,8 @@ def create_db_index():
     client.ktqueue.jobs.create_index([("hide", pymongo.ASCENDING)])
     client.ktqueue.credentials.create_index([("repo", pymongo.ASCENDING)], unique=True)
     client.ktqueue.oauth.create_index([("provider", pymongo.ASCENDING), ("id", pymongo.ASCENDING)], unique=True)
-    client.ktqueue.jobs.update({'hide': {'$exists': False}}, {'$set': {'hide': False}})
-    client.ktqueue.jobs.update({'fav': {'$exists': False}}, {'$set': {'fav': False}})
+    client.ktqueue.jobs.update_many({'hide': {'$exists': False}}, {'$set': {'hide': False}})
+    client.ktqueue.jobs.update_many({'fav': {'$exists': False}}, {'$set': {'fav': False}})
 
 
 def get_app():

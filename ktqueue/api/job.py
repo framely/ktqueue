@@ -329,7 +329,7 @@ class StopJobHandler(BaseHandler):
         self.finish({'message': 'Job {} successful deleted.'.format(job)})
 
 
-class TensorBoardHandler(tornado.web.RequestHandler):
+class TensorBoardHandler(BaseHandler):
 
     def initialize(self, k8s_client, mongo_client):
         self.k8s_client = k8s_client

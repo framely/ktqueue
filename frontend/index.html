@@ -272,7 +272,13 @@
         :key="version">
       </el-option>
     </el-select>
-    <pre class="ktq-log-text">{{log_text}}</pre>
+    <el-switch
+      v-model="line_wrap"
+      :width="90"
+      on-text="Wrap"
+      off-text="No wrap">
+    </el-switch>
+    <pre class="ktq-log-text" v-bind:class="{'ktq-log-wrap': line_wrap}">{{log_text}}</pre>
   </div>
 </script>
 </body>
@@ -526,6 +532,7 @@
         log_text: '',
         selected_version: 'current',
         versions: [],
+        line_wrap: false
       }
     },
     mounted:function() {

@@ -1,6 +1,7 @@
 # encoding: utf-8
 import json
 import os
+import re
 import logging
 import bson
 
@@ -14,6 +15,8 @@ from .utils import BaseHandler
 
 
 class JobsHandler(BaseHandler):
+
+    __job_name_pattern = re.compile(r'^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$')
 
     def initialize(self, k8s_client, mongo_client):
         self.k8s_client = k8s_client
@@ -40,6 +43,11 @@ class JobsHandler(BaseHandler):
         body_arguments = json.loads(self.request.body.decode('utf-8'))
 
         name = body_arguments.get('name')
+
+        if not self.__job_name_pattern.match(name):
+            self.set_status(400)
+            self.finish({"message": "illegal task name, regex used for validation is [a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*"})
+            return
 
         # job with same name is forbidden
         if self.jobs_collection.find_one({'name': name}):
@@ -180,6 +188,7 @@ class JobsHandler(BaseHandler):
             'image': image,
             'status': 'fetching',
             'tensorboard': False,
+            'hide': False,
             'volumeMounts': body_arguments.get('volumeMounts', []),
         }}, upsert=True)
         self.finish(json.dumps({'message': 'job {} successful created.'.format(name)}))
@@ -191,6 +200,8 @@ class JobsHandler(BaseHandler):
             await cloner.clone_and_copy()
             if not commit_id:
                 self.jobs_collection.update_one({'name': name}, {'$set': {'commit_id': cloner.commit_id}})
+        else:
+            os.makedirs(os.path.join('/cephfs/ktqueue/jobs', name, 'code'))
 
         ret = await self.k8s_client.call_api(
             api='/apis/batch/v1/namespaces/{namespace}/jobs'.format(namespace=settings.job_namespace),

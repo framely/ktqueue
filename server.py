@@ -38,6 +38,7 @@ def create_db_index():
     client = pymongo.MongoClient('ktqueue-mongodb')
     client.ktqueue.jobs.create_index([("name", pymongo.ASCENDING)], unique=True)
     client.ktqueue.jobs.create_index([("hide", pymongo.ASCENDING)])
+    client.ktqueue.jobs.create_index([("status", pymongo.ASCENDING)])
     client.ktqueue.credentials.create_index([("repo", pymongo.ASCENDING)], unique=True)
     client.ktqueue.oauth.create_index([("provider", pymongo.ASCENDING), ("id", pymongo.ASCENDING)], unique=True)
     client.ktqueue.jobs.update_many({'hide': {'$exists': False}}, {'$set': {'hide': False}})

@@ -36,6 +36,7 @@
         <el-radio-button label="All"></el-radio-button>
         <el-radio-button label="Hidden"></el-radio-button>
         <el-radio-button label="Fav"></el-radio-button>
+        <el-radio-button label="Running"></el-radio-button>
       </el-radio-group>
       <el-pagination
         layout="prev, pager, next"
@@ -401,7 +402,10 @@
           params['hide'] = '1'
         } else if (this.jobsFilter === 'Fav') {
           params['fav'] = '1'
+        } else if (this.jobsFilter === 'Running') {
+          params['status'] = 'Running'
         }
+
         this.$http.get('/jobs', {params: params}).then(function(resource){
           for (var i = 0; i < resource.body.data.length; i++){
             var line = resource.body.data[i];

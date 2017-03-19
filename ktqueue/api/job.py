@@ -222,6 +222,7 @@ class JobsHandler(BaseHandler):
         page_size = int(self.get_argument('page_size', 20))
         hide = self.get_argument('hide', None)
         fav = self.get_argument('fav', None)
+        status = self.get_argument('status', None)
         tags = self.get_arguments('tag')
 
         query = {}
@@ -239,6 +240,10 @@ class JobsHandler(BaseHandler):
         # fav
         if fav:
             query['fav'] = True if fav == '1' else False
+
+        # status; Running etc.
+        if status:
+            query['status'] = status
 
         print(query)
         count = self.jobs_collection.count(query)

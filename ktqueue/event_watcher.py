@@ -83,6 +83,8 @@ async def watch_pod(k8s_client):
         # update status
         if status == ('terminated', 'Completed'):
             job_update['status'] = 'Completed'
+        elif status == ('running', None):
+            job_update['status'] = 'Running'
         else:
             job_update['status'] = status_str
 

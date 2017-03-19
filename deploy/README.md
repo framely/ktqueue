@@ -8,6 +8,9 @@
 4. build ktqueue docker image
 5. deploy ktqueue
 
+To setup a KTQueue node, please read [How to setup a KTQueue node](./NODE.md)
+
+
 # File list
 
 - ktqueue.yaml
@@ -15,11 +18,11 @@
 - mongodb-dev.yaml
 - mongodb-production.yaml
 
-# dependancy
+# Dependancy
 
 ktqueue requires kubernetes and cephfs, make sure you already have them.
 
-# prepare ceph
+# Prepare ceph
 
 kubernetes and other components needs permission (aka, a secret) to access ceph.
 
@@ -41,7 +44,7 @@ and import `ceph-secret.yaml`
 
 > kubectl create -f dep-ceph-secret.yaml
 
-# deploy mongodb
+# Deploy mongodb
 
 ## create rbd
 
@@ -59,7 +62,7 @@ current linux kernal doesn't support all the features. if you get error, refer [
 
 > rbd feature disable ktqueue-mongodb exclusive-lock, object-map, fast-diff, deep-flatten
 
-## create mongodb services
+## Create mongodb services
 
 > cp mongodb-production.yaml dep-mongodb-production.yaml
 
@@ -71,7 +74,7 @@ create mongodb server
 
 > kubectl create -f dep-mongodb-production.yaml
 
-# deploy ktqueue
+# Deploy ktqueue
 
 ## mount cephfs
 ktqueue dameon needs to access ceph to clone code, store log, etc. and ktqueue job needs to access ceph to store output.

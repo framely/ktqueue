@@ -149,7 +149,7 @@
           <el-select v-model="createJobDialog.data.node" clearable placeholder="Any">
             <el-option
               v-for="item in nodes"
-              :label="item.labels['kubernetes.io/hostname']"
+              :label="item.labels['kubernetes.io/hostname'] + ' (' + item.gpu_used + '/' + item.gpu_capacity + ')'"
               :value="item.labels['kubernetes.io/hostname']"
               :key="item.labels['kubernetes.io/hostname']">
             </el-option>

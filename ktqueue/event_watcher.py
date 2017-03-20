@@ -43,6 +43,7 @@ class EventWatcher:
 
 async def watch_pod(k8s_client):
     from .api.tensorboard_proxy import job_tensorboard_map
+    from .api.node import node_used_gpus
 
     mongo_client = pymongo.MongoClient('ktqueue-mongodb')
     jobs_collection = mongo_client.ktqueue.jobs
@@ -67,7 +68,8 @@ async def watch_pod(k8s_client):
         if 'job-name' not in labels:
             return
         job_name = labels['job-name']
-        if not jobs_collection.find_one({'name': job_name}):
+        job_exist = jobs_collection.find_one({'name': job_name})
+        if not job_exist:
             return
 
         if event['object']['status']['phase'] == 'Pending':
@@ -94,13 +96,15 @@ async def watch_pod(k8s_client):
         else:
             job_update['status'] = status_str
 
-        # update Running Node
+        # update Running Node & used GPU
         if status[0] == 'terminated':
             job_update['runningNode'] = None
+            node_used_gpus[event['object']['spec']['nodeName']].pop(job_name, None)
         elif event['object']['spec'].get('nodeName', None):
             job_update['runningNode'] = event['object']['spec']['nodeName']
+            node_used_gpus[event['object']['spec']['nodeName']][job_name] = int(job_exist['gpu_num'])
 
-        if jobs_collection.find_one({'name': job_name})['status'] != 'ManualStop':
+        if job_exist['status'] != 'ManualStop':
             jobs_collection.update_one({'name': job_name}, {'$set': job_update})
 
         # When a job is successful finished, save log and do not watch it any more

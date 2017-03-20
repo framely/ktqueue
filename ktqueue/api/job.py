@@ -245,7 +245,6 @@ class JobsHandler(BaseHandler):
         if status:
             query['status'] = status
 
-        print(query)
         count = self.jobs_collection.count(query)
         jobs = list(self.jobs_collection.find(query).sort("_id", -1).skip(page_size * (page - 1)).limit(page_size))
         for job in jobs:

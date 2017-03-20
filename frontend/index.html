@@ -42,6 +42,7 @@
         layout="prev, pager, next"
         :page-size="jobsData.page_size"
         :total="jobsData.total"
+        :current-page="page"
         @current-change="loadJobs"
         >
       </el-pagination>
@@ -154,6 +155,7 @@
               :key="item.labels['kubernetes.io/hostname']">
             </el-option>
           </el-select>
+          <label> (avail/total) </label>
         </el-form-item>
         <el-form-item label="GPUs">
          <el-input-number v-model="createJobDialog.data.gpu_num"></el-input-number>
@@ -314,7 +316,9 @@
       }
     },
     mounted:function() {
-      this.loadJobs(1);
+      this.jobsFilter = this.$route.query.jobsFilter || this.jobsFilter;
+      this.page = this.$route.query.page || this.page;
+      this.loadJobs(this.page);
       this.$http.get('/repos?page_size=0&repo_only=1').then(function(resource){
         for (var i = 0; i < resource.body.data.length; i++){
           this.repos.push({"value": resource.body.data[i].repo});
@@ -346,7 +350,7 @@
               type: 'success',
               message: job_name + ' stopped!'
             });
-            $this.loadJobs(1);
+            $this.loadJobs(this.page);
             $this.createJobDialog.visible=false;
           });
         }).catch(function() {
@@ -384,6 +388,10 @@
         })
       },
       loadJobs: function(page) {
+        this.$router.push({query: {
+          jobsFilter: this.jobsFilter,
+          page: page
+        }})
         this.jobsData.loading=true;
         var params = {};
         params['page'] = page;
@@ -469,7 +477,7 @@
         })
       },
       jobsFilterChange: function() {
-        this.loadJobs(1);
+        this.loadJobs(this.page);
       }
     }
   });

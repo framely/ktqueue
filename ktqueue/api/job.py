@@ -14,6 +14,122 @@ from ktqueue import settings
 from .utils import BaseHandler
 
 
+def generate_job(name, command, node, gpu_num, image, repo, branch, commit_id, comments, mounts):
+
+    command_kube = 'cd $WORK_DIR && ' + command
+
+    job_dir = os.path.join('/cephfs/ktqueue/jobs/', name)
+    if not os.path.exists(job_dir):
+        os.makedirs(job_dir)
+
+    output_dir = os.path.join('/cephfs/ktqueue/output', name)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    volumeMounts = []
+    volumes = []
+    node_selector = {}
+
+    # add custom volumeMounts
+    for volume in mounts:
+        volume_name = 'volume-{}'.format(volume['key'])
+        volumes.append({
+            'name': volume_name,
+            'hostPath': {'path': volume['hostPath']}
+        })
+        volumeMounts.append({
+            'name': volume_name,
+            'mountPath': volume['mountPath']
+        })
+
+    if node:
+        node_selector['kubernetes.io/hostname'] = node
+
+    if gpu_num > 0:
+        # cause kubernetes does not support NVML, use this trick to suit nvidia driver version
+        command_kube = 'version=$(ls /nvidia-drivers | tail -1); ln -s /nvidia-drivers/$version /usr/local/nvidia &&' + command_kube
+        volumes.append({
+            'name': 'nvidia-drivers',
+            'hostPath': {
+                'path': '/var/lib/nvidia-docker/volumes/nvidia_driver'
+            }
+        })
+        volumeMounts.append({
+            'name': 'nvidia-drivers',
+            'mountPath': '/nvidia-drivers',
+        })
+
+    # cephfs
+    volumes.append({
+        'name': 'cephfs',
+        'hostPath': {
+            'path': '/mnt/cephfs'
+        }
+    })
+    volumeMounts.append({
+        'name': 'cephfs',
+        'mountPath': '/cephfs',
+    })
+
+    job = {
+        'apiVersion': 'batch/v1',
+        'kind': 'Job',
+        'metadata': {
+            'name': name,
+        },
+        'spec': {
+            'parallelism': 1,
+            'template': {
+                'metadata': {
+                    'name': name,
+                },
+                'spec': {
+                    'containers': [
+                        {
+                            'name': name + 'container',
+                            'image': image,
+                            'imagePullPolicy': 'IfNotPresent',
+                            'command': ['sh', '-c', command_kube],
+                            'resources': {
+                                'limits': {
+                                    'alpha.kubernetes.io/nvidia-gpu': gpu_num,
+                                },
+                            },
+                            'volumeMounts': volumeMounts,
+                            'env': [
+                                {
+                                    'name': 'JOB_NAME',
+                                    'value': name
+                                },
+                                {
+                                    'name': 'OUTPUT_DIR',
+                                    'value': output_dir
+                                },
+                                {
+                                    'name': 'WORK_DIR',
+                                    'value': os.path.join(job_dir, 'code')
+                                },
+                                {
+                                    'name': 'LC_ALL',
+                                    'value': 'en_US.UTF-8'
+                                },
+                                {
+                                    'name': 'LC_CTYPE',
+                                    'value': 'en_US.UTF-8'
+                                },
+                            ]
+                        }
+                    ],
+                    'volumes': volumes,
+                    'restartPolicy': 'OnFailure',
+                    'nodeSelector': node_selector,
+                }
+            }
+        }
+    }
+    return job
+
+
 class JobsHandler(BaseHandler):
 
     __job_name_pattern = re.compile(r'^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$')
@@ -63,118 +179,16 @@ class JobsHandler(BaseHandler):
         branch = body_arguments.get('branch', None)
         commit_id = body_arguments.get('commit_id', None)
         comments = body_arguments.get('comments', None)
-
-        command_kube = 'cd $WORK_DIR && ' + command
+        mounts = body_arguments.get('volumeMounts', [])
 
         job_dir = os.path.join('/cephfs/ktqueue/jobs/', name)
-        if not os.path.exists(job_dir):
-            os.makedirs(job_dir)
 
-        output_dir = os.path.join('/cephfs/ktqueue/output', name)
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
+        job = generate_job(
+            name=name, command=command, node=node, gpu_num=gpu_num, image=image,
+            repo=repo, branch=branch, commit_id=commit_id, comments=comments,
+            mounts=mounts
+        )
 
-        volumeMounts = []
-        volumes = []
-        node_selector = {}
-
-        # add custom volumeMounts
-        for volume in body_arguments.get('volumeMounts', []):
-            volume_name = 'volume-{}'.format(volume['key'])
-            volumes.append({
-                'name': volume_name,
-                'hostPath': {'path': volume['hostPath']}
-            })
-            volumeMounts.append({
-                'name': volume_name,
-                'mountPath': volume['mountPath']
-            })
-
-        if node:
-            node_selector['kubernetes.io/hostname'] = node
-
-        if gpu_num > 0:
-            # cause kubernetes does not support NVML, use this trick to suit nvidia driver version
-            command_kube = 'version=$(ls /nvidia-drivers | tail -1); ln -s /nvidia-drivers/$version /usr/local/nvidia &&' + command_kube
-            volumes.append({
-                'name': 'nvidia-drivers',
-                'hostPath': {
-                    'path': '/var/lib/nvidia-docker/volumes/nvidia_driver'
-                }
-            })
-            volumeMounts.append({
-                'name': 'nvidia-drivers',
-                'mountPath': '/nvidia-drivers',
-            })
-
-        # cephfs
-        volumes.append({
-            'name': 'cephfs',
-            'hostPath': {
-                'path': '/mnt/cephfs'
-            }
-        })
-        volumeMounts.append({
-            'name': 'cephfs',
-            'mountPath': '/cephfs',
-        })
-
-        job = {
-            'apiVersion': 'batch/v1',
-            'kind': 'Job',
-            'metadata': {
-                'name': name,
-            },
-            'spec': {
-                'parallelism': 1,
-                'template': {
-                    'metadata': {
-                        'name': name,
-                    },
-                    'spec': {
-                        'containers': [
-                            {
-                                'name': name + 'container',
-                                'image': image,
-                                'imagePullPolicy': 'IfNotPresent',
-                                'command': ['sh', '-c', command_kube],
-                                'resources': {
-                                    'limits': {
-                                        'alpha.kubernetes.io/nvidia-gpu': gpu_num,
-                                    },
-                                },
-                                'volumeMounts': volumeMounts,
-                                'env': [
-                                    {
-                                        'name': 'JOB_NAME',
-                                        'value': name
-                                    },
-                                    {
-                                        'name': 'OUTPUT_DIR',
-                                        'value': output_dir
-                                    },
-                                    {
-                                        'name': 'WORK_DIR',
-                                        'value': os.path.join(job_dir, 'code')
-                                    },
-                                    {
-                                        'name': 'LC_ALL',
-                                        'value': 'en_US.UTF-8'
-                                    },
-                                    {
-                                        'name': 'LC_CTYPE',
-                                        'value': 'en_US.UTF-8'
-                                    },
-                                ]
-                            }
-                        ],
-                        'volumes': volumes,
-                        'restartPolicy': 'OnFailure',
-                        'nodeSelector': node_selector,
-                    }
-                }
-            }
-        }
         self.jobs_collection.update_one({'name': name}, {'$set': {
             'name': name,
             'node': node,
@@ -189,7 +203,7 @@ class JobsHandler(BaseHandler):
             'status': 'fetching',
             'tensorboard': False,
             'hide': False,
-            'volumeMounts': body_arguments.get('volumeMounts', []),
+            'volumeMounts': mounts,
         }}, upsert=True)
         self.finish(json.dumps({'message': 'job {} successful created.'.format(name)}))
 
@@ -350,6 +364,19 @@ class StopJobHandler(BaseHandler):
             )
         self.jobs_collection.update_one({'name': job}, {'$set': {'status': 'ManualStop'}})
         self.finish({'message': 'Job {} successful deleted.'.format(job)})
+
+
+class RestartJobHandler(BaseHandler):
+
+    def initialize(self, k8s_client, mongo_client):
+        self.k8s_client = k8s_client
+        self.mongo_client = mongo_client
+        self.jobs_collection = mongo_client.ktqueue.jobs
+
+    @convert_asyncio_task
+    @tornado.web.authenticated
+    async def post(self, job):
+        pass
 
 
 class TensorBoardHandler(BaseHandler):

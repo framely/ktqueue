@@ -19,6 +19,7 @@ class NodesHandler(tornado.web.RequestHandler):
 
         self.write({'items': [{
             'name': node['metadata']['name'],
-            'labels': node['metadata']['labels']
+            'labels': node['metadata']['labels'],
+            'capacity': node['status']['capacity'],
         } for node in ret['items']
         ]})

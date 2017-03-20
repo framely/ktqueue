@@ -44,6 +44,9 @@ body {
 .job-expand-item > div {
   margin-left: 100px;
 }
+.job-expand-item  .el-button {
+  padding: 0;
+}
 .job-expand-item > div > pre{
   margin: 0;
 }

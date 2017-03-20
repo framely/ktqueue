@@ -58,6 +58,11 @@
          <div class="job-expand-item"><label>commit_id: </label><div>{{ scope.row.commit_id }}</div></div>
          <div class="job-expand-item"><label>command: </label><div>{{ scope.row.command }}</div></div>
          <div class="job-expand-item"><label>comments: </label><div><pre>{{ scope.row.comments }}</pre></div></div>
+         <div class="job-expand-item"><label>Clone: </label><el-button @click="copyJob(scope.$index, jobsData.data)" type="text" size="small">Clone</el-button></div>
+         <div class="job-expand-item"><label>Board: </label>
+           <el-button v-if="scope.row.tensorboard" @click="stopBoard(scope.$index, jobsData.data)" type="text" size="small">Stop</el-button>
+           <el-button v-else @click="startBoard(scope.$index, jobsData.data)" type="text" size="small">Start</el-button>
+         </div>
          <div class="job-expand-item"><label>Hide: </label>
            <div>
              <el-switch
@@ -73,13 +78,6 @@
           <a :href="'/tensorboard/' + scope.row.name + '/'">TensorBoard</a>
          </p>
        </template>
-      </el-table-column>
-      <el-table-column
-        label="Clone"
-        width="80">
-        <template scope="scope">
-          <el-button @click="copyJob(scope.$index, jobsData.data)" type="text" size="small">Clone</el-button>
-        </template>
       </el-table-column>
       <el-table-column
         width="50">
@@ -104,7 +102,7 @@
       </el-table-column>
       <el-table-column
         label="status"
-        width="260"
+        width="140"
         header-align="center"
         :show-overflow-tooltip="true">
         <template scope="scope">
@@ -133,14 +131,6 @@
         label="user"
         width="100"
         align="center">
-      </el-table-column>
-      <el-table-column
-        label="Board"
-        width="100">
-        <template scope="scope">
-          <el-button v-if="scope.row.tensorboard" @click="stopBoard(scope.$index, jobsData.data)" type="text" size="small">Stop</el-button>
-          <el-button v-else @click="startBoard(scope.$index, jobsData.data)" type="text" size="small">Start</el-button>
-        </template>
       </el-table-column>
       <el-table-column
         label="Log"

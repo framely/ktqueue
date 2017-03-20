@@ -49,6 +49,8 @@ async def watch_pod(k8s_client):
 
     async def callback(event):
         labels = event['object']['metadata']['labels']
+
+        # TensorBoard Pod
         if 'ktqueue-tensorboard-job-name' in labels:
             job_name = labels['ktqueue-tensorboard-job-name']
             hostIP = event['object']['status'].get('podIP', None)
@@ -56,6 +58,10 @@ async def watch_pod(k8s_client):
                 job_tensorboard_map.pop(job_name, None)
             elif hostIP:
                 job_tensorboard_map[job_name] = hostIP
+            return
+
+        # Ignore MODIFY event by add 'ktqueue-watching' label
+        if labels.get('ktqueue-watching', None) == 'false':
             return
 
         if 'job-name' not in labels:

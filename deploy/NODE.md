@@ -36,3 +36,7 @@ nvidia-docker       nvidia_driver_367.57
 ```
 
 try to remove that volume and run `nvidia-docker run --rm nvidia/cuda nvidia-smi` again.
+
+- docker: Error response from daemon: create nvidia_driver_367.57: VolumeDriver.Create: internal error, check logs for details.
+
+> sudo chown nvidia-docker:nvidia-docker /var/lib/nvidia-docker/volumes/nvidia_driver

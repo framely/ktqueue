@@ -2,6 +2,7 @@
 from .job import JobsHandler
 from .job import JobLogHandler
 from .job import StopJobHandler
+from .job import RestartJobHandler
 from .job import TensorBoardHandler
 from .job import JobLogVersionHandler
 from .repo import ReposHandler

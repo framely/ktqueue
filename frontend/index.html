@@ -60,7 +60,11 @@
          <div class="job-expand-item"><label>command: </label><div>{{ scope.row.command }}</div></div>
          <div class="job-expand-item"><label>comments: </label><div><pre>{{ scope.row.comments }}</pre></div></div>
          <div class="job-expand-item"><label>Clone: </label><el-button @click="copyJob(scope.$index, jobsData.data)" type="text" size="small">Clone</el-button></div>
-         <div class="job-expand-item"><label>Board: </label>
+         <div class="job-expand-item" v-if="scope.row.status == 'ManualStop' || scope.row.status == 'Completed'">
+           <label>Restart: </label>
+           <el-button  @click="restartJob(scope.$index, jobsData.data)" type="text" size="small">Restart</el-button>
+         </div>
+         <div class="job-expand-item"><label>TensorBoard: </label>
            <el-button v-if="scope.row.tensorboard" @click="stopBoard(scope.$index, jobsData.data)" type="text" size="small">Stop</el-button>
            <el-button v-else @click="startBoard(scope.$index, jobsData.data)" type="text" size="small">Start</el-button>
          </div>
@@ -78,6 +82,7 @@
          <p v-if="scope.row.tensorboard">
           <a :href="'/tensorboard/' + scope.row.name + '/'">TensorBoard</a>
          </p>
+
        </template>
       </el-table-column>
       <el-table-column
@@ -360,6 +365,30 @@
           });
         });
       },
+      restartJob: function(index, tableData) {
+        this.checkAuth();
+        var job_name = tableData[index].name;
+        var $this = this;
+        this.$confirm('Do you really want to Restart ' + job_name + '?', 'Stop job', {
+          confirmButtonText: 'Confirm',
+          cancelButtonText: 'Cancel',
+          type: 'warning'
+        }).then(function() {
+          $this.$http.post('/job/restart/' + job_name, {}).then(function(resource){
+            $this.$message({
+              type: 'success',
+              message: job_name + ' Restarted!'
+            });
+            $this.loadJobs(this.page);
+            $this.createJobDialog.visible=false;
+          });
+        }).catch(function() {
+          $this.$message({
+            type: 'info',
+            message: 'Cancel.'
+          });
+        });
+      },
       startBoard: function(index, tableData) {
         this.checkAuth();
         var line = tableData[index];
@@ -579,7 +608,7 @@
         });
       },
       versionChange: function(version) {
-        this.$router.push({query: {version: version}})
+        this.$router.replace({query: {version: version}})
         this.loadJobLog(this.$route.params.job_name, version);
       }
     }

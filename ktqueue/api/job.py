@@ -15,6 +15,7 @@ from .utils import BaseHandler
 
 
 def generate_job(name, command, node, gpu_num, image, repo, branch, commit_id, comments, mounts):
+    """Generate a job description in JSON format."""
 
     command_kube = 'cd $WORK_DIR && ' + command
 
@@ -128,6 +129,25 @@ def generate_job(name, command, node, gpu_num, image, repo, branch, commit_id, c
         }
     }
     return job
+
+
+async def k8s_delete_job(k8s_client, job):
+    pods = await k8s_client.call_api(
+        method='GET',
+        api='/api/v1/namespaces/{namespace}/pods'.format(namespace=settings.job_namespace),
+        params={'labelSelector': 'job-name={job}'.format(job=job)}
+    )
+    if len(pods['items']):
+        pod_name = pods['items'][0]['metadata']['name']
+        await save_job_log(job_name=job, pod_name=pod_name, k8s_client=k8s_client)
+        await k8s_client.call_api(
+            method='DELETE',
+            api='/apis/batch/v1/namespaces/{namespace}/jobs/{name}'.format(namespace=settings.job_namespace, name=job)
+        )
+        await k8s_client.call_api(
+            method='DELETE',
+            api='/api/v1/namespaces/{namespace}/pods/{name}'.format(namespace=settings.job_namespace, name=pod_name)
+        )
 
 
 class JobsHandler(BaseHandler):
@@ -346,22 +366,7 @@ class StopJobHandler(BaseHandler):
     @convert_asyncio_task
     @tornado.web.authenticated
     async def post(self, job):
-        pods = await self.k8s_client.call_api(
-            method='GET',
-            api='/api/v1/namespaces/{namespace}/pods'.format(namespace=settings.job_namespace),
-            params={'labelSelector': 'job-name={job}'.format(job=job)}
-        )
-        if len(pods['items']):
-            pod_name = pods['items'][0]['metadata']['name']
-            await save_job_log(job_name=job, pod_name=pod_name, k8s_client=self.k8s_client)
-            await self.k8s_client.call_api(
-                method='DELETE',
-                api='/apis/batch/v1/namespaces/{namespace}/jobs/{name}'.format(namespace=settings.job_namespace, name=job)
-            )
-            await self.k8s_client.call_api(
-                method='DELETE',
-                api='/api/v1/namespaces/{namespace}/pods/{name}'.format(namespace=settings.job_namespace, name=pod_name)
-            )
+        await k8s_delete_job(self.k8s_client, job)
         self.jobs_collection.update_one({'name': job}, {'$set': {'status': 'ManualStop'}})
         self.finish({'message': 'Job {} successful deleted.'.format(job)})
 
@@ -376,7 +381,19 @@ class RestartJobHandler(BaseHandler):
     @convert_asyncio_task
     @tornado.web.authenticated
     async def post(self, job):
-        pass
+        await k8s_delete_job(self.k8s_client, job)
+        job = self.jobs_collection.find_one({'name': job})
+        job_description = generate_job(
+            name=job['name'], command=job['command'], node=job['node'], gpu_num=job['gpu_num'], image=job['image'],
+            repo=job['name'], branch=job['command'], commit_id=job['commit_id'], comments=job['comments'],
+            mounts=job['volumeMounts']
+        )
+        await self.k8s_client.call_api(
+            api='/apis/batch/v1/namespaces/{namespace}/jobs'.format(namespace=settings.job_namespace),
+            method='POST',
+            data=job_description
+        )
+        self.finish({'message': 'job {} successful restarted.'.format(job['name'])})
 
 
 class TensorBoardHandler(BaseHandler):

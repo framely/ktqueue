@@ -9,7 +9,7 @@ import tornado.web
 
 from ktqueue.cloner import Cloner
 from .utils import convert_asyncio_task
-from ktqueue.utils import save_job_log
+from ktqueue.utils import k8s_delete_job
 from ktqueue import settings
 from .utils import BaseHandler
 
@@ -129,25 +129,6 @@ def generate_job(name, command, node, gpu_num, image, repo, branch, commit_id, c
         }
     }
     return job
-
-
-async def k8s_delete_job(k8s_client, job):
-    pods = await k8s_client.call_api(
-        method='GET',
-        api='/api/v1/namespaces/{namespace}/pods'.format(namespace=settings.job_namespace),
-        params={'labelSelector': 'job-name={job}'.format(job=job)}
-    )
-    if len(pods['items']):
-        pod_name = pods['items'][0]['metadata']['name']
-        await save_job_log(job_name=job, pod_name=pod_name, k8s_client=k8s_client)
-        await k8s_client.call_api(
-            method='DELETE',
-            api='/apis/batch/v1/namespaces/{namespace}/jobs/{name}'.format(namespace=settings.job_namespace, name=job)
-        )
-        await k8s_client.call_api(
-            method='DELETE',
-            api='/api/v1/namespaces/{namespace}/pods/{name}'.format(namespace=settings.job_namespace, name=pod_name)
-        )
 
 
 class JobsHandler(BaseHandler):

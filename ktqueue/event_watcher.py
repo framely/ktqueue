@@ -6,6 +6,7 @@ import json
 import pymongo
 
 from ktqueue.utils import save_job_log
+from ktqueue.utils import k8s_delete_job
 from ktqueue import settings
 
 
@@ -123,6 +124,7 @@ async def watch_pod(k8s_client):
                     headers={'Content-Type': 'application/json-patch+json'},
                     data=[{"op": "add", "path": "/metadata/labels/ktqueue-watching", "value": "false"}]
                 )
+                await k8s_delete_job(k8s_client=k8s_client, job=job_name, pod_name=pod_name, save_log=False)
 
     event_watcher = EventWatcher(k8s_client=k8s_client)
 

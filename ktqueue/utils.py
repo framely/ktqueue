@@ -34,3 +34,28 @@ async def save_job_log(job_name, pod_name, k8s_client):
         async for chunk in resp.content.iter_any():
             f.write(chunk)
     resp.close()
+
+
+async def k8s_delete_job(k8s_client, job, pod_name=None, save_log=True):
+    if not pod_name:
+        pods = await k8s_client.call_api(
+            method='GET',
+            api='/api/v1/namespaces/{namespace}/pods'.format(namespace=settings.job_namespace),
+            params={'labelSelector': 'job-name={job}'.format(job=job)}
+        )
+        if len(pods['items']):
+            pod_name = pods['items'][0]['metadata']['name']
+        else:
+            return
+
+    if save_log:
+        await save_job_log(job_name=job, pod_name=pod_name, k8s_client=k8s_client)
+    
+    await k8s_client.call_api(
+        method='DELETE',
+        api='/apis/batch/v1/namespaces/{namespace}/jobs/{name}'.format(namespace=settings.job_namespace, name=job)
+    )
+    await k8s_client.call_api(
+        method='DELETE',
+        api='/api/v1/namespaces/{namespace}/pods/{name}'.format(namespace=settings.job_namespace, name=pod_name)
+    )

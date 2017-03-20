@@ -149,7 +149,7 @@
           <el-select v-model="createJobDialog.data.node" clearable placeholder="Any">
             <el-option
               v-for="item in nodes"
-              :label="item.labels['kubernetes.io/hostname'] + ' (' + item.gpu_used + '/' + item.gpu_capacity + ')'"
+              :label="item.labels['kubernetes.io/hostname'] + ' (' + (item.gpu_capacity - item.gpu_used) + '/' + item.gpu_capacity + ')'"
               :value="item.labels['kubernetes.io/hostname']"
               :key="item.labels['kubernetes.io/hostname']">
             </el-option>
@@ -255,7 +255,6 @@
 <script type="text/x-template" id="tq-job-log-template">
   <div>
     <el-select v-model="selected_version" placeholder="" @change="versionChange">
-      <el-option label="current" value="current" key="current"></el-option>
       <el-option
         v-for="version in versions"
         :label="version"
@@ -524,17 +523,19 @@
     data: function(){
       return {
         log_text: '',
-        selected_version: 'current',
+        selected_version: null,
         versions: [],
         line_wrap: false
       }
     },
     mounted:function() {
       this.loadJobLogVersions(this.$route.params.job_name);
-      this.loadJobLog(this.$route.params.job_name, 'current');
     },
     methods: {
       loadJobLog: function(job_name, version){
+        if (version === null) {
+          return;
+        }
         var loading = this.$loading({
           target: '.ktq-log-text',
           text: 'loading log'
@@ -551,6 +552,15 @@
       loadJobLogVersions: function(job_name) {
         this.$http.get('/jobs/' + job_name + '/log/version').then(function(resource){
           this.versions = resource.body.versions;
+          if (this.versions.length === 0) {
+            this.selected_version = null;
+            return;
+          }
+          if (this.versions.indexOf('current') != -1) {
+            this.selected_version='current';
+          } else {
+            this.selected_version = this.versions[this.versions.length - 1]
+          }
         }).catch(function(response) {
           this.$message.error('Unable to load Log versions!\n');
           console.error(response.body);

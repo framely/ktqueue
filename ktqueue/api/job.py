@@ -271,10 +271,20 @@ class JobsHandler(BaseHandler):
 
 class JobLogVersionHandler(tornado.web.RequestHandler):
 
+    def initialize(self, k8s_client):
+        self.k8s_client = k8s_client
+
     @convert_asyncio_task
     async def get(self, job):
         from ktqueue.utils import get_log_versions
         versions = get_log_versions(job)
+        pods = await self.k8s_client.call_api(
+            method='GET',
+            api='/api/v1/namespaces/{namespace}/pods'.format(namespace=settings.job_namespace),
+            params={'labelSelector': 'job-name={job}'.format(job=job)}
+        )
+        if len(pods['items']):
+            versions = ['current'] + versions
         self.write({
             'job': job,
             'versions': versions
@@ -310,8 +320,6 @@ class JobLogHandler(BaseHandler):
                     self.write(chunk)
                 resp.close()
                 return
-        with open(os.path.join('/cephfs/ktqueue/logs', job, 'log.txt'), 'r') as f:
-            self.finish(f.read())
 
 
 class StopJobHandler(BaseHandler):

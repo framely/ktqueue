@@ -64,7 +64,7 @@ def get_app():
         (r'/jobs', JobsHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),
         (r'/jobs/(?P<job>[\w_-]+)/log', JobLogHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),
         (r'/jobs/(?P<job>[\w_-]+)/log/(?P<version>\d+|current)', JobLogHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),
-        (r'/jobs/(?P<job>[\w_-]+)/log/version', JobLogVersionHandler),
+        (r'/jobs/(?P<job>[\w_-]+)/log/version', JobLogVersionHandler, {'k8s_client': k8s_client}),
         (r'/job/stop/(?P<job>[\w_\-\.]+)', StopJobHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),
         (r'/job/tensorboard/(?P<job>[\w_\-\.]+)', TensorBoardHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),
         (r'/repos', ReposHandler, {'mongo_client': mongo_client}),

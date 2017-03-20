@@ -24,16 +24,13 @@ async def save_job_log(job_name, pod_name, k8s_client):
         method='GET',
         api='/api/v1/namespaces/{namespace}/pods/{pod_name}/log'.format(namespace=settings.job_namespace, pod_name=pod_name)
     )
-    log_path = os.path.join(log_dir, 'log.txt')
 
-    # Rolling log
-    if os.path.exists(log_path):
-        max_version = 0
-        for version in get_log_versions(job_name=job_name):
-            max_version = max(max_version, int(version))
-        os.rename(log_path, os.path.join(log_dir, 'log.{}.txt'.format(max_version + 1)))
+    max_version = 0
+    for version in get_log_versions(job_name=job_name):
+        max_version = max(max_version, int(version))
+    log_path = os.path.join(log_dir, 'log.{}.txt'.format(max_version + 1))
 
-    with open(os.path.join(log_dir, 'log.txt'), 'wb') as f:
+    with open(log_path, 'wb') as f:
         async for chunk in resp.content.iter_any():
             f.write(chunk)
     resp.close()

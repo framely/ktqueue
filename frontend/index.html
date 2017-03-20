@@ -564,6 +564,10 @@
             this.selected_version = null;
             return;
           }
+          if (this.$route.query.version) {
+            this.selected_version = this.$route.query.version;
+            return;
+          }
           if (this.versions.indexOf('current') != -1) {
             this.selected_version='current';
           } else {
@@ -575,6 +579,7 @@
         });
       },
       versionChange: function(version) {
+        this.$router.push({query: {version: version}})
         this.loadJobLog(this.$route.params.job_name, version);
       }
     }

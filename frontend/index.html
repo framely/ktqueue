@@ -60,9 +60,10 @@
          <div class="job-expand-item"><label>command: </label><div>{{ scope.row.command }}</div></div>
          <div class="job-expand-item"><label>comments: </label><div><pre>{{ scope.row.comments }}</pre></div></div>
          <div class="job-expand-item"><label>Clone: </label><el-button @click="copyJob(scope.$index, jobsData.data)" type="text" size="small">Clone</el-button></div>
-         <div class="job-expand-item" v-if="scope.row.status == 'ManualStop' || scope.row.status == 'Completed'">
-           <label>Restart: </label>
-           <el-button  @click="restartJob(scope.$index, jobsData.data)" type="text" size="small">Restart</el-button>
+         <div class="job-expand-item">
+           <label>Control: </label>
+           <el-button v-if="scope.row.status.indexOf('Completed') != -1 || scope.row.status == 'ManualStop'"  @click="restartJob(scope.$index, jobsData.data)" type="text" size="small">Restart</el-button>
+           <el-button v-else @click="stopJob(scope.$index, jobsData.data)" type="text" size="small">Stop</el-button>
          </div>
          <div class="job-expand-item"><label>TensorBoard: </label>
            <el-button v-if="scope.row.tensorboard" @click="stopBoard(scope.$index, jobsData.data)" type="text" size="small">Stop</el-button>
@@ -108,16 +109,10 @@
       </el-table-column>
       <el-table-column
         label="status"
+        prop="status"
         width="140"
-        header-align="center"
+        header-align="left"
         :show-overflow-tooltip="true">
-        <template scope="scope">
-          <div class="status-stop-wrap">
-            <span v-if="scope.row.status.indexOf('Completed') != -1 || scope.row.status == 'ManualStop'"></span>
-            <el-button v-else  type="text" @click="stopJob(scope.$index, jobsData.data)">Stop</el-button>
-          </div>
-          <span>{{ scope.row.status}}</span>
-        </template>
       </el-table-column>
       <el-table-column
         prop="gpu_num"
@@ -135,8 +130,9 @@
       <el-table-column
         prop="user"
         label="user"
-        width="100"
-        align="center">
+        width="110"
+        :show-overflow-tooltip="true"
+        align="left">
       </el-table-column>
       <el-table-column
         label="Log"

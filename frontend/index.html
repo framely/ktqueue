@@ -117,7 +117,7 @@
       <el-table-column
         prop="gpu_num"
         label="GPUs"
-        width="100"
+        width="70"
         align="center">
       </el-table-column>
       <el-table-column
@@ -138,7 +138,7 @@
         label="Log"
         width="100">
         <template scope="scope">
-          <el-button @click="viewLog(scope.$index, jobsData.data)" type="text" size="small">Log</el-button>
+          <router-link :to="{path: '/jobs/' + scope.row.name + '/log'}"><el-button type="text" size="small">Log</el-button></router-link>
         </template>
       </el-table-column>
     </el-table>
@@ -447,10 +447,6 @@
           this.$message.error(response.body);
           console.error(response.body);
         });
-      },
-      viewLog: function(index, tableData) {
-        var job_name = tableData[index].name;
-        this.$router.push('/jobs/' + job_name + '/log');
       },
       repoQuerySearch: function(queryString, cb) {
         var repos = this.repos;

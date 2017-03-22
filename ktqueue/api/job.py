@@ -14,7 +14,7 @@ from ktqueue import settings
 from .utils import BaseHandler
 
 
-def generate_job(name, command, node, gpu_num, image, repo, branch, commit_id, comments, mounts):
+def generate_job(name, command, node, gpu_num, image, repo, branch, commit_id, comments, mounts, load_nvidia_driver=None):
     """Generate a job description in JSON format."""
 
     command_kube = 'cd $WORK_DIR && ' + command
@@ -46,7 +46,7 @@ def generate_job(name, command, node, gpu_num, image, repo, branch, commit_id, c
     if node:
         node_selector['kubernetes.io/hostname'] = node
 
-    if gpu_num > 0:
+    if gpu_num > 0 or load_nvidia_driver:
         # cause kubernetes does not support NVML, use this trick to suit nvidia driver version
         command_kube = 'version=$(ls /nvidia-drivers | tail -1); ln -s /nvidia-drivers/$version /usr/local/nvidia &&' + command_kube
         volumes.append({
@@ -87,9 +87,9 @@ def generate_job(name, command, node, gpu_num, image, repo, branch, commit_id, c
                 'spec': {
                     'containers': [
                         {
-                            'name': name + 'container',
+                            'name': 'ktqueue-job',
                             'image': image,
-                            'imagePullPolicy': 'IfNotPresent',
+                            # 'imagePullPolicy': 'IfNotPresent',
                             'command': ['sh', '-c', command_kube],
                             'resources': {
                                 'limits': {
@@ -387,12 +387,19 @@ class TensorBoardHandler(BaseHandler):
     @convert_asyncio_task
     @tornado.web.authenticated
     async def post(self, job):
-        job_image = self.jobs_collection.find_one({'name': job})['image']
         body_arguments = json.loads(self.request.body.decode('utf-8'))
         logdir = body_arguments.get('logdir', '/cephfs/ktqueue/logs/{job}/train'.format(job=job))
-        job_dir = os.path.join('/cephfs/ktqueue/jobs/', job)
-        output_dir = os.path.join('/cephfs/ktqueue/output', job)
         command = 'tensorboard --logdir {logdir} --host 0.0.0.0'.format(logdir=logdir)
+
+        job_record = self.jobs_collection.find_one({'name': job})
+        job_description = generate_job(
+            name=job_record['name'], command=command, node=job_record['node'], gpu_num=0, image=job_record['image'],
+            repo=None, branch=None, commit_id=None, comments=None, mounts=job_record['volumeMounts'],
+            load_nvidia_driver=True,
+        )
+        pod_spec = dict(job_description['spec']['template']['spec'])
+        pod_spec['containers'][0]['name'] = 'ktqueue-tensorboard'
+        print(pod_spec)
 
         pod = {
             'apiVersion': 'v1',
@@ -403,43 +410,7 @@ class TensorBoardHandler(BaseHandler):
                     'ktqueue-tensorboard-job-name': job
                 }
             },
-            'spec': {
-                'containers': [
-                    {
-                        'name': 'ktqueue-tensorboard',
-                        'image': job_image,
-                        'command': ['sh', '-c', command],
-                        'volumeMounts': [
-                            {
-                                'name': 'cephfs',
-                                'mountPath': '/cephfs',
-                            }
-                        ],
-                        'env': [
-                            {
-                                'name': 'JOB_NAME',
-                                'value': job
-                            },
-                            {
-                                'name': 'OUTPUT_DIR',
-                                'value': output_dir
-                            },
-                            {
-                                'name': 'WORK_DIR',
-                                'value': os.path.join(job_dir, 'code'),
-                            },
-                        ]
-                    }
-                ],
-                'volumes': [
-                    {
-                        'name': 'cephfs',
-                        'hostPath': {
-                            'path': '/mnt/cephfs'
-                        }
-                    }
-                ]
-            }
+            'spec': pod_spec
         }
 
         ret = await self.k8s_client.call_api(
@@ -447,7 +418,10 @@ class TensorBoardHandler(BaseHandler):
             method='POST',
             data=pod
         )
-        self.jobs_collection.update_one({'name': job}, {'$set': {'tensorboard': True}})
+        if 'metadata' in ret and 'creationTimestamp' in ret['metadata']:
+            self.jobs_collection.update_one({'name': job}, {'$set': {'tensorboard': True}})
+        else:
+            self.set_status(500)
 
         self.write(ret)
 

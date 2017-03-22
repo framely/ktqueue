@@ -7,7 +7,6 @@
     <title>KTQueue</title>
     <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-default/index.css">
     <link rel="stylesheet" href="/static/ktqueue.css">
-
   </head>
   <style>
     [v-cloak] {
@@ -42,7 +41,7 @@
         layout="prev, pager, next"
         :page-size="jobsData.page_size"
         :total="jobsData.total"
-        :current-page="page"
+        :current-page="jobsData.page"
         @current-change="loadJobs"
         >
       </el-pagination>
@@ -50,6 +49,7 @@
     <el-table
       :data="jobsData.data"
       style="width: 100%"
+      :row-class-name="tableRowClassName"
       v-loading="jobsData.loading">
       <el-table-column type="expand">
        <template scope="scope">
@@ -110,14 +110,15 @@
       <el-table-column
         label="status"
         prop="status"
-        width="140"
+        width="120"
+
         header-align="left"
         :show-overflow-tooltip="true">
       </el-table-column>
       <el-table-column
         prop="gpu_num"
         label="GPUs"
-        width="70"
+        width="80"
         align="center">
       </el-table-column>
       <el-table-column
@@ -318,8 +319,8 @@
     },
     mounted:function() {
       this.jobsFilter = this.$route.query.jobsFilter || this.jobsFilter;
-      this.page = this.$route.query.page || this.page;
-      this.loadJobs(this.page);
+      var page = this.$route.query.page || this.jobsData.page;
+      this.loadJobs(page);
       this.$http.get('/repos?page_size=0&repo_only=1').then(function(resource){
         for (var i = 0; i < resource.body.data.length; i++){
           this.repos.push({"value": resource.body.data[i].repo});
@@ -351,7 +352,7 @@
               type: 'success',
               message: job_name + ' stopped!'
             });
-            $this.loadJobs(this.page);
+            $this.loadJobs(this.jobsData.page);
             $this.createJobDialog.visible=false;
           });
         }).catch(function() {
@@ -375,7 +376,7 @@
               type: 'success',
               message: job_name + ' Restarted!'
             });
-            $this.loadJobs(this.page);
+            $this.loadJobs(this.jobsData.page);
             $this.createJobDialog.visible=false;
           });
         }).catch(function() {
@@ -498,7 +499,13 @@
         })
       },
       jobsFilterChange: function() {
-        this.loadJobs(this.page);
+        this.loadJobs(this.jobsData.page);
+      },
+      tableRowClassName(row, index) {
+        if (row.status == 'Running') {
+          return 'positive-row';
+        }
+        return '';
       }
     }
   });

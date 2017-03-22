@@ -57,3 +57,6 @@ body {
 .ktq-log-wrap {
   white-space: pre-wrap;
 }
+.el-table .positive-row {
+  background: #e2f0e4;
+}

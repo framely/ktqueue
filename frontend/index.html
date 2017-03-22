@@ -144,8 +144,8 @@
       </el-table-column>
     </el-table>
     <el-dialog :title="createJobDialog.title" v-model="createJobDialog.visible" size="large">
-      <el-form ref="form" :model="createJobDialog.data" label-width="80px">
-        <el-form-item label="Name">
+      <el-form ref="form" :model="createJobDialog.data" label-width="95px">
+        <el-form-item label="Name" required>
          <el-input v-model="createJobDialog.data.name"></el-input>
         </el-form-item>
         <el-form-item label="Node">
@@ -162,10 +162,10 @@
         <el-form-item label="GPUs">
          <el-input-number v-model="createJobDialog.data.gpu_num"></el-input-number>
         </el-form-item>
-        <el-form-item label="Command">
+        <el-form-item label="Command" required>
          <el-input type="textarea" :rows=3 v-model="createJobDialog.data.command"></el-input>
         </el-form-item>
-        <el-form-item label="Image">
+        <el-form-item label="Image" required>
          <el-input v-model="createJobDialog.data.image"></el-input>
         </el-form-item>
         <el-form-item label="Repo">
@@ -272,6 +272,9 @@
       on-text="Wrap"
       off-text="No wrap">
     </el-switch>
+    <a :download="this.$route.params.job_name + '.' + this.$route.query.version + '.txt'" :href="'jobs/' + this.$route.params.job_name + '/log/' + this.$route.query.version">
+      <el-button type='text'>Download</el-button>
+    </a>
     <pre class="ktq-log-text" v-bind:class="{'ktq-log-wrap': line_wrap}">{{log_text}}</pre>
   </div>
 </script>

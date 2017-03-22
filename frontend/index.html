@@ -62,7 +62,7 @@
          <div class="job-expand-item"><label>Clone: </label><el-button @click="copyJob(scope.$index, jobsData.data)" type="text" size="small">Clone</el-button></div>
          <div class="job-expand-item">
            <label>Control: </label>
-           <el-button v-if="scope.row.status.indexOf('Completed') != -1 || scope.row.status == 'ManualStop'"  @click="restartJob(scope.$index, jobsData.data)" type="text" size="small">Restart</el-button>
+           <el-button v-if="scope.row.status.indexOf('Completed') != -1 || scope.row.status == 'ManualStop' || scope.row.status == 'FetchError'"  @click="restartJob(scope.$index, jobsData.data)" type="text" size="small">Restart</el-button>
            <el-button v-else @click="stopJob(scope.$index, jobsData.data)" type="text" size="small">Stop</el-button>
          </div>
          <div class="job-expand-item"><label>TensorBoard: </label>

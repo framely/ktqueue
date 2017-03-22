@@ -131,6 +131,22 @@ def generate_job(name, command, node, gpu_num, image, repo, branch, commit_id, c
     return job
 
 
+async def clone_code(name, repo, branch, commit_id, jobs_collection, job_dir):
+    # clone code
+    if repo:
+        try:
+            cloner = Cloner(repo=repo, dst_directory=os.path.join(job_dir, 'code'),
+                            branch=branch, commit_id=commit_id)
+            await cloner.clone_and_copy()
+        except Exception as e:
+            jobs_collection.update_one({'name': name}, {'$set': {'status': 'FetchError'}})
+            raise
+        if not commit_id:
+            jobs_collection.update_one({'name': name}, {'$set': {'commit_id': cloner.commit_id}})
+    else:
+        os.makedirs(os.path.join('/cephfs/ktqueue/jobs', name, 'code'))
+
+
 class JobsHandler(BaseHandler):
 
     __job_name_pattern = re.compile(r'^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$')
@@ -209,14 +225,9 @@ class JobsHandler(BaseHandler):
         self.finish(json.dumps({'message': 'job {} successful created.'.format(name)}))
 
         # clone code
-        if repo:
-            cloner = Cloner(repo=repo, dst_directory=os.path.join(job_dir, 'code'),
-                            branch=branch, commit_id=commit_id)
-            await cloner.clone_and_copy()
-            if not commit_id:
-                self.jobs_collection.update_one({'name': name}, {'$set': {'commit_id': cloner.commit_id}})
-        else:
-            os.makedirs(os.path.join('/cephfs/ktqueue/jobs', name, 'code'))
+        await clone_code(
+            name=name, repo=repo, branch=branch, commit_id=commit_id,
+            jobs_collection=self.jobs_collection, job_dir=job_dir)
 
         ret = await self.k8s_client.call_api(
             api='/apis/batch/v1/namespaces/{namespace}/jobs'.format(namespace=settings.job_namespace),
@@ -364,11 +375,20 @@ class RestartJobHandler(BaseHandler):
     async def post(self, job):
         await k8s_delete_job(self.k8s_client, job)
         job = self.jobs_collection.find_one({'name': job})
+        job_dir = os.path.join('/cephfs/ktqueue/jobs/', job['name'])
+
         job_description = generate_job(
             name=job['name'], command=job['command'], node=job['node'], gpu_num=job['gpu_num'], image=job['image'],
             repo=job['name'], branch=job['command'], commit_id=job['commit_id'], comments=job['comments'],
             mounts=job['volumeMounts']
         )
+
+        # Refetch
+        if job['status'] == 'FetchError':
+            await clone_code(
+                name=job['name'], repo=job['repo'], branch=job['branch'], commit_id=job['commit_id'],
+                jobs_collection=self.jobs_collection, job_dir=job_dir)
+
         await self.k8s_client.call_api(
             api='/apis/batch/v1/namespaces/{namespace}/jobs'.format(namespace=settings.job_namespace),
             method='POST',

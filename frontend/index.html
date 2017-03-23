@@ -503,7 +503,7 @@
         })
       },
       jobsFilterChange: function(filter) {
-        if (filter) { // tableFilter
+        if (filter.constructor.name == 'Array') { // tableFilter
           if (filter.user.length) {
             this.jobsFilterUser = filter.user[0];
           } else {

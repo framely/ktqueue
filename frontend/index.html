@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>KTQueue</title>
-    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-default/index.css">
+    <link rel="stylesheet" href="//cdn.bootcss.com/element-ui/1.2.5/theme-default/index.css">
     <link rel="stylesheet" href="/static/ktqueue.css">
   </head>
   <style>
@@ -282,11 +282,11 @@
   </div>
 </script>
 </body>
-<script src="https://unpkg.com/vue/dist/vue.js"></script>
-<script src="https://unpkg.com/vue-resource@1.2.0/dist/vue-resource.min.js"></script>
-<script src="https://unpkg.com/vue-router/dist/vue-router.js"></script>
-<script src="https://unpkg.com/element-ui/lib/index.js"></script>
-<script src="https://cdn.bootcss.com/moment.js/2.17.1/moment.js"></script>
+<script src="//cdn.bootcss.com/vue/2.2.4/vue.js"></script>
+<script src="//cdn.bootcss.com/vue-resource/1.2.1/vue-resource.min.js"></script>
+<script src="//cdn.bootcss.com/vue-router/2.3.0/vue-router.min.js"></script>
+<script src="//cdn.bootcss.com/element-ui/1.2.5/index.js"></script>
+<script src="//cdn.bootcss.com/moment.js/2.18.1/moment.min.js"></script>
 <script>
   var Jobs = Vue.component('tq-jobs', {
     template: '#tq-jobs-template',
@@ -503,7 +503,7 @@
         })
       },
       jobsFilterChange: function(filter) {
-        if (filter.constructor.name == 'Array') { // tableFilter
+        if (filter.constructor.name == 'Array') { // which mean table.filter-change call this function
           if (filter.user.length) {
             this.jobsFilterUser = filter.user[0];
           } else {

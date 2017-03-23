@@ -25,7 +25,7 @@
       <el-menu-item v-else index="login" :route="{}"><a href="/oauth2/start">Login</a></el-menu-item>
 
     </el-menu>
-    <router-view :check-auth="checkAuth"></router-view>
+    <router-view :check-auth="checkAuth" :current-user="current_user" ></router-view>
   </div>
 <script type="text/x-template" id="tq-jobs-template">
   <div>
@@ -50,6 +50,7 @@
       :data="jobsData.data"
       style="width: 100%"
       :row-class-name="tableRowClassName"
+      @filter-change="jobsFilterChange"
       v-loading="jobsData.loading">
       <el-table-column type="expand">
        <template scope="scope">
@@ -133,6 +134,8 @@
         label="user"
         width="110"
         :show-overflow-tooltip="true"
+        :filters="filterUsers"
+        columnKey="user"
         align="left">
       </el-table-column>
       <el-table-column
@@ -289,10 +292,12 @@
     template: '#tq-jobs-template',
     props: {
       checkAuth: Function,
+      currentUser: String
     },
     data: function(){
       return {
         jobsFilter: 'All',
+        jobsFilterUser: null,
         jobsData: {
           count: 0,
           page_size: 20,
@@ -431,14 +436,10 @@
         } else if (this.jobsFilter === 'Running') {
           params['status'] = 'Running'
         }
-
+        if (this.jobsFilterUser) {
+          params['user'] = this.jobsFilterUser;
+        }
         this.$http.get('/jobs', {params: params}).then(function(resource){
-          for (var i = 0; i < resource.body.data.length; i++){
-            var line = resource.body.data[i];
-            if (line['creationTimestamp']) {
-              // line['creationTimestamp'] = new Date(line['creationTimestamp'])
-            }
-          }
           resource.body.loading=false;
           this.jobsData = resource.body;
         });
@@ -501,7 +502,12 @@
         }).catch(function(){
         })
       },
-      jobsFilterChange: function() {
+      jobsFilterChange: function(filter) {
+        if (filter) { // tableFilter
+          if (filter.user.length) {
+            this.jobsFilterUser = filter.user[0];
+          }
+        }
         this.loadJobs(this.jobsData.page);
       },
       tableRowClassName(row, index) {
@@ -509,6 +515,15 @@
           return 'positive-row';
         }
         return '';
+      }
+    },
+    computed: {
+      filterUsers: function() {
+        var users = [];
+        if (this.currentUser) {
+          users.push({text: this.currentUser, value: this.currentUser});
+        }
+        return users;
       }
     }
   });

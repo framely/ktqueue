@@ -250,6 +250,7 @@ class JobsHandler(BaseHandler):
         fav = self.get_argument('fav', None)
         status = self.get_argument('status', None)
         tags = self.get_arguments('tag')
+        user = self.get_argument('user', None)
 
         query = {}
 
@@ -270,6 +271,10 @@ class JobsHandler(BaseHandler):
         # status; Running etc.
         if status:
             query['status'] = status
+
+        # user
+        if user:
+            query['user'] = user
 
         count = self.jobs_collection.count(query)
         jobs = list(self.jobs_collection.find(query).sort("_id", -1).skip(page_size * (page - 1)).limit(page_size))

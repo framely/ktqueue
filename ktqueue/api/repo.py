@@ -62,7 +62,7 @@ class ReposHandler(BaseHandler):
 
     async def get(self):
         page = int(self.get_argument('page', 1))
-        page_size = int(self.get_argument('page_size', 20))
+        page_size = int(self.get_argument('pageSize', 20))
         count = self.repos_collection.count()
         repos = []
         for repo in self.repos_collection.find().sort("_id", -1).skip(page_size * (page - 1)).limit(page_size):
@@ -73,6 +73,6 @@ class ReposHandler(BaseHandler):
         self.finish(json.dumps({
             'page': page,
             'total': count,
-            'page_size': page_size,
+            'pageSize': page_size,
             'data': repos,
         }))

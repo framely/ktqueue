@@ -245,7 +245,7 @@ class JobsHandler(BaseHandler):
 
     async def get(self):
         page = int(self.get_argument('page', 1))
-        page_size = int(self.get_argument('page_size', 20))
+        page_size = int(self.get_argument('pageSize', 20))
         hide = self.get_argument('hide', None)
         fav = self.get_argument('fav', None)
         status = self.get_argument('status', None)
@@ -283,7 +283,7 @@ class JobsHandler(BaseHandler):
         self.finish(json.dumps({
             'page': page,
             'total': count,
-            'page_size': page_size,
+            'pageSize': page_size,
             'data': jobs,
         }))
 

@@ -38,11 +38,12 @@
         <el-radio-button label="Running"></el-radio-button>
       </el-radio-group>
       <el-pagination
-        layout="prev, pager, next"
-        :page-size="jobsData.page_size"
+        layout="prev, pager, next, sizes"
+        :page-size="jobsData.pageSize"
         :total="jobsData.total"
         :current-page="jobsData.page"
-        @current-change="loadJobs"
+        @current-change="pageCurrentChange"
+        @size-change="pageSizeChange"
         >
       </el-pagination>
     </div>
@@ -221,7 +222,7 @@
       <el-button size="small" type="primary" @click="checkAuth(), createRepoDialog.visible = true">Create Repo</el-button>
       <el-pagination
         layout="prev, pager, next"
-        :page-size="reposData.page_size"
+        :page-size="reposData.pageSize"
         :total="reposData.total"
         @current-change="loadRepos"
         >
@@ -295,13 +296,25 @@
       currentUser: String
     },
     data: function(){
-      return {
+      var defaultFilter = {
         jobsFilter: 'All',
-        jobsFilterUser: null,
+        page: 1,
+        pageSize: 20,
+        user: null
+      };
+      return {
+        defaultFilter: defaultFilter,
+        jobsFilter: this.$route.query.jobsFilter || defaultFilter.jobsFilter,
+        jobsFilterUser: this.$route.query.user || defaultFilter.jobsFilterUser,
+        // pageSizeToGo: dealing with element-ui issue,
+        // when you choose a large `pageSize`, which makes your current `page`,
+        // element-ui will call not only `size-change` but also `current-change`
+        // we use pageSizeToGo to eliminate incorrect `current-change` call
+        pageSizeToGo: parseInt(this.$route.query.pageSize || defaultFilter.pageSize),
         jobsData: {
           count: 0,
-          page_size: 20,
-          page: 1,
+          pageSize: parseInt(this.$route.query.pageSize || defaultFilter.pageSize),
+          page: parseInt(this.$route.query.page || defaultFilter.page),
           loading: false,
           data: []
         },
@@ -326,10 +339,8 @@
       }
     },
     mounted:function() {
-      this.jobsFilter = this.$route.query.jobsFilter || this.jobsFilter;
-      var page = this.$route.query.page || this.jobsData.page;
-      this.loadJobs(page);
-      this.$http.get('/repos?page_size=0&repo_only=1').then(function(resource){
+      this.loadJobs(this.jobsData.page, this.jobsData.pageSize);
+      this.$http.get('/repos?pageSize=0&repo_only=1').then(function(resource){
         for (var i = 0; i < resource.body.data.length; i++){
           this.repos.push({"value": resource.body.data[i].repo});
         }
@@ -421,11 +432,20 @@
           });
         })
       },
-      loadJobs: function(page) {
-        this.$router.push({query: {
-          jobsFilter: this.jobsFilter,
-          page: page
-        }})
+      pageCurrentChange: function(page) {
+        if (this.jobsData.pageSize != this.pageSizeToGo) {
+          return; // deal with element-ui issue
+        }
+        this.loadJobs(page, this.jobsData.pageSize);
+      },
+      pageSizeChange: function(pageSize) {
+        this.pageSizeToGo = pageSize;
+        this.loadJobs(Math.floor((this.jobsData.page - 1) * this.jobsData.pageSize / pageSize) + 1, pageSize);
+      },
+      loadJobs: function(page, pageSize) {
+        console.log('loadJobs', page, pageSize);
+        pageSize = pageSize || this.jobsData.pageSize;
+
         this.jobsData.loading=true;
         var params = {};
         params['page'] = page;
@@ -439,9 +459,23 @@
         if (this.jobsFilterUser) {
           params['user'] = this.jobsFilterUser;
         }
+        params['pageSize'] = pageSize;
+        var routerQuery = {
+          jobsFilter: this.jobsFilter,
+          user: this.jobsFilterUser,
+          page: page,
+          pageSize: pageSize
+        };
+        for (var k in routerQuery) {
+          if (routerQuery[k] == this.defaultFilter[k]) {
+            delete routerQuery[k];
+          }
+        }
+        this.$router.push({query: routerQuery});
         this.$http.get('/jobs', {params: params}).then(function(resource){
           resource.body.loading=false;
           this.jobsData = resource.body;
+          console.log('Resp', resource.body.page, resource.body.pageSize);
         });
       },
       createJob: function() {
@@ -538,7 +572,7 @@
         return {
           reposData: {
             count: 0,
-            page_size: 20,
+            pageSize: 20,
             page: 1,
             loading: false,
             data: []

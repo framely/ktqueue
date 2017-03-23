@@ -506,6 +506,8 @@
         if (filter) { // tableFilter
           if (filter.user.length) {
             this.jobsFilterUser = filter.user[0];
+          } else {
+            this.jobsFilterUser = null;
           }
         }
         this.loadJobs(this.jobsData.page);

@@ -10,8 +10,8 @@ from .utils import BaseHandler
 
 class ReposHandler(BaseHandler):
 
-    __https_pattern = re.compile(r'https:\/\/(\w+@\w+)?[\w.\/]*.git')
-    __ssh_pattern = re.compile(r'\w+@[\w.]+:\w+\/\w+\.git')
+    __https_pattern = re.compile(r'https:\/\/(\w+@\w+)?[\w.\/\-+]*.git')
+    __ssh_pattern = re.compile(r'\w+@[\w.]+:[\w-]+\/[\w\-+]+\.git')
 
     def initialize(self, mongo_client):
         self.mongo_client = mongo_client

@@ -13,8 +13,8 @@ import pymongo
 class Cloner:
     """Do the git clone stuff in another thread"""
 
-    __https_pattern = re.compile(r'https:\/\/(\w+@\w+)?[\w.\/]*.git')
-    __ssh_pattern = re.compile(r'\w+@[\w.]+:\w+\/\w+\.git')
+    __https_pattern = re.compile(r'https:\/\/(\w+@\w+)?[\w.\/\-+]*.git')
+    __ssh_pattern = re.compile(r'\w+@[\w.]+:[\w-]+\/[\w\-+]+\.git')
     __ref_pattern = re.compile(r'(?P<hash>\w+)\s(?P<ref>[\w/\-]+)')
 
     def __init__(self, repo, dst_directory, branch='master', commit_id=None):

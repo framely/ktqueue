@@ -23,14 +23,13 @@
       <el-menu-item index="/repos" :route="{path: '/repos'}">Repos</el-menu-item>
       <el-menu-item v-if="current_user" index="current_user" :route="{}">{{current_user}}</el-menu-item>
       <el-menu-item v-else index="login" :route="{}"><a href="/oauth2/start">Login</a></el-menu-item>
-
     </el-menu>
     <router-view :check-auth="checkAuth" :current-user="current_user" ></router-view>
   </div>
 <script type="text/x-template" id="tq-jobs-template">
   <div>
     <div class="table-header">
-      <el-button size="small" type="primary" @click="checkAuth(), createJobDialog.visible = true">Create Job</el-button>
+      <el-button size="small" type="primary" @click="showCreateJob">Create Job</el-button>
       <el-radio-group v-model="jobsFilter" size="small" @change="jobsFilterChange">
         <el-radio-button label="All"></el-radio-button>
         <el-radio-button label="Hidden"></el-radio-button>
@@ -74,19 +73,18 @@
          <div class="job-expand-item"><label>Hide: </label>
            <div>
              <el-switch
-             v-model="scope.row.hide"
-             :width="70"
-             on-text="Hide"
-             off-text="Show"
-             :disabled="scope.row.status == 'Running'"
-             @change="jobHideChange(scope.row, $event)">
-            </el-switch>
-          </div>
+               v-model="scope.row.hide"
+               :width="70"
+               on-text="Hide"
+               off-text="Show"
+               :disabled="scope.row.status == 'Running'"
+               @change="jobHideChange(scope.row, $event)">
+              </el-switch>
+           </div>
          </div>
          <p v-if="scope.row.tensorboard">
-          <a :href="'/tensorboard/' + scope.row.name + '/'">TensorBoard</a>
+           <a :href="'/tensorboard/' + scope.row.name + '/'">TensorBoard</a>
          </p>
-
        </template>
       </el-table-column>
       <el-table-column
@@ -207,7 +205,6 @@
         <el-form-item>
           <el-button @click="addVolumeMount">Add volume</el-button>
         </el-form-item>
-
       </el-form>
       <span slot="footer" class="dialog-footer">
         <el-button @click="createJobDialog.visible = false">取 消</el-button>
@@ -352,8 +349,13 @@
     },
     methods: {
       moment: moment,
+      showCreateJob: function() {
+        this.checkAuth();
+        this.createJobDialog.title = 'Create Job';
+        this.createJobDialog.visible = true;
+      },
       copyJob: function(index, tableData) {
-        this.checkAuth()
+        this.checkAuth();
         var line = tableData[index];
         Object.assign(this.createJobDialog.data, line);
         this.createJobDialog.visible = true;

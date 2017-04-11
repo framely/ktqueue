@@ -177,6 +177,11 @@ class JobsHandler(BaseHandler):
 
         name = body_arguments.get('name')
 
+        if len(name) > 58:  # kubernetes doesn't accept name longer than 64. 64 - 6 (pod name suffix) = 58
+            self.set_status(400)
+            self.finish({"message": "job name too long(>58)."})
+            return
+
         if not self.__job_name_pattern.match(name):
             self.set_status(400)
             self.finish({"message": "illegal task name, regex used for validation is [a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*"})
@@ -293,7 +298,7 @@ class JobsHandler(BaseHandler):
             only part of fields can be modified.
         """
         body_arguments = json.loads(self.request.body.decode('utf-8'))
-        update_data = {k: v for k, v in body_arguments.items() if k in ('hide', 'comments', 'tags', 'fav')}
+        update_data = {k: v for k, v in body_arguments.items() if k in ('hide', 'comments', 'tags', 'fav', 'node')}
         self.jobs_collection.update_one({'_id': bson.ObjectId(body_arguments['_id'])}, {'$set': update_data})
         ret = self.jobs_collection.find_one({'_id': bson.ObjectId(body_arguments['_id'])})
         ret['_id'] = str(ret['_id'])

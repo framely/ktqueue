@@ -17,7 +17,7 @@
     <a :download="this.$route.params.jobName + '.' + this.$route.query.version + '.txt'" :href="'jobs/' + this.$route.params.jobName + '/log/' + this.$route.query.version">
       <el-button type='text'>Download</el-button>
     </a>
-    <pre class="ktq-log-text" v-bind:class="{'ktq-log-wrap': lineWrap}">{{log_text}}</pre>
+    <pre class="ktq-log-text" v-bind:class="{'ktq-log-wrap': lineWrap}">{{logText}}</pre>
   </div>
 </template>
 <script>
@@ -43,7 +43,7 @@ export default {
         target: '.ktq-log-text',
         text: 'loading log'
       })
-      this.$http.get('/jobs/' + jobName + '/log/' + version).then(function (resource) {
+      this.$http.get('/api/jobs/' + jobName + '/log/' + version).then(function (resource) {
         this.logText = resource.body
         loading.close()
       }).catch(function (response) {
@@ -53,7 +53,7 @@ export default {
       })
     },
     loadJobLogVersions: function (jobName) {
-      this.$http.get('/jobs/' + jobName + '/log/version').then(function (resource) {
+      this.$http.get('/api/jobs/' + jobName + '/log/version').then(function (resource) {
         this.versions = resource.body.versions
         if (this.versions.length === 0) {
           this.selectedVersion = null

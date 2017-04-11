@@ -271,22 +271,21 @@ export default {
     stopJob: function (index, tableData) {
       this.checkAuth()
       var jobName = tableData[index].name
-      var $this = this
       this.$confirm('Do you really want to stop ' + jobName + '?', 'Stop job', {
         confirmButtonText: 'Confirm',
         cancelButtonText: 'Cancel',
         type: 'warning'
-      }).then(function () {
-        $this.$http.post('/api/job/stop/' + jobName, {}).then(function (resource) {
-          $this.$message({
+      }).then(() => {
+        this.$http.post('/api/job/stop/' + jobName, {}).then((resource) => {
+          this.$message({
             type: 'success',
             message: jobName + ' stopped!'
           })
-          $this.loadJobs(this.jobsData.page)
-          $this.createJobDialog.visible = false
+          this.loadJobs(this.jobsData.page)
+          this.createJobDialog.visible = false
         })
-      }).catch(function () {
-        $this.$message({
+      }).catch(() => {
+        this.$message({
           type: 'info',
           message: 'Cancel.'
         })
@@ -295,22 +294,21 @@ export default {
     restartJob: function (index, tableData) {
       this.checkAuth()
       var jobName = tableData[index].name
-      var $this = this
       this.$confirm('Do you really want to Restart ' + jobName + '?', 'Restart job', {
         confirmButtonText: 'Confirm',
         cancelButtonText: 'Cancel',
         type: 'warning'
       }).then(function () {
-        $this.$http.post('/api/job/restart/' + jobName, {}).then(function (resource) {
-          $this.$message({
+        this.$http.post('/api/job/restart/' + jobName, {}).then((resource) => {
+          this.$message({
             type: 'success',
             message: jobName + ' Restarted!'
           })
-          $this.loadJobs(this.jobsData.page)
-          $this.createJobDialog.visible = false
+          this.loadJobs(this.jobsData.page)
+          this.createJobDialog.visible = false
         })
-      }).catch(function () {
-        $this.$message({
+      }).catch(() => {
+        this.$message({
           type: 'info',
           message: 'Cancel.'
         })
@@ -319,13 +317,12 @@ export default {
     startBoard: function (index, tableData) {
       this.checkAuth()
       var line = tableData[index]
-      var $this = this
       this.$prompt('Please enter logdir. You can use $JOB_NAME, $WORK_DIR, $OUTPUT_DIR', 'TensorBoard', {
         confirmButtonText: 'Confirm',
         cancelButtonText: 'Cancel'
-      }).then(function (data) {
-        $this.$http.post('/api/job/tensorboard/' + line.name, { 'logdir': data.value }).then(function () {
-          $this.loadJobs($this.jobsData.page)
+      }).then((data) => {
+        this.$http.post('/api/job/tensorboard/' + line.name, { 'logdir': data.value }).then(() => {
+          this.loadJobs(this.jobsData.page)
         })
       }).catch(function () {
 
@@ -334,9 +331,8 @@ export default {
     stopBoard: function (index, tableData) {
       this.checkAuth()
       var line = tableData[index]
-      var $this = this
-      this.$http.delete('/job/tensorboard/' + line.name).then(function () {
-        $this.loadJobs($this.jobsData.page)
+      this.$http.delete('/job/tensorboard/' + line.name).then(() => {
+        this.loadJobs(this.jobsData.page)
         this.$message({
           type: 'info',
           message: 'TensorBoard stopped.'

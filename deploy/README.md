@@ -85,6 +85,14 @@ you should modify `fstab` and add cephfs mount.
 
 ## build image
 
+build front-end
+
+> cd frontend  
+> npm install  
+> npm run build  
+
+build docker image
+
 > docker build -t ktqueue .
 
 you can modify `dep-ktqueue.yaml`(see next step)and change image name if you want.

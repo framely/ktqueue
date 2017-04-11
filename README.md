@@ -14,15 +14,3 @@ kubernetes task queue
 # deploy
 
 deploy guide under [deploy](./deploy) directory
-
-# build
-
-build front-end
-
-> cd frontend  
-> npm install  
-> npm run build  
-
-build docker image
-
-> docker build . -t ktqueue

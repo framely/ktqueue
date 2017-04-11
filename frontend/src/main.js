@@ -20,7 +20,7 @@ new Vue({
     routes: [
       { path: '/', name: 'jobs', redirect: '/jobs' },
       { path: '/jobs', component: Jobs },
-      { path: '/jobs/:job_name/log', component: JobLog },
+      { path: '/jobs/:jobName/log', component: JobLog },
       { path: '/repos', name: 'repos', component: Repos }
     ]
   })

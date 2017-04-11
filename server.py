@@ -32,7 +32,7 @@ from ktqueue.event_watcher import watch_pod
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 __frontend_path = os.path.join(BASE_DIR, 'frontend')
-__static_path = os.path.join(__frontend_path, 'static')
+__dist_path = os.path.join(__frontend_path, 'dist')
 
 
 def create_db_index():
@@ -61,21 +61,23 @@ def get_app():
             'path': __frontend_path,
             'default_filename': 'index.html'
         }),
-        (r'/nodes', NodesHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),
-        (r'/jobs', JobsHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),
-        (r'/jobs/(?P<job>[\w_-]+)/log', JobLogHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),
-        (r'/jobs/(?P<job>[\w_-]+)/log/(?P<version>\d+|current)', JobLogHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),
-        (r'/jobs/(?P<job>[\w_-]+)/log/version', JobLogVersionHandler, {'k8s_client': k8s_client}),
-        (r'/job/stop/(?P<job>[\w_\-\.]+)', StopJobHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),
-        (r'/job/restart/(?P<job>[\w_\-\.]+)', RestartJobHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),
-        (r'/job/tensorboard/(?P<job>[\w_\-\.]+)', TensorBoardHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),
-        (r'/repos', ReposHandler, {'mongo_client': mongo_client}),
-        (r'/static/(.*)', tornado.web.StaticFileHandler, {'path': __static_path}),
+        (r'/dist/(.*)', tornado.web.StaticFileHandler, {'path': __dist_path}),
         (r'/tensorboard/(?P<job>[\w_\-\.]+)/(?P<url>.*)', TensorBoardProxyHandler, {'client': SimpleAsyncHTTPClient(max_clients=64)}),
         (r'/data/(?P<url>.*)', TensorBoardProxyHandler, {'client': SimpleAsyncHTTPClient(max_clients=64)}),  # This is a hack for TensorBoard
         (r'/oauth2/start', OAuth2Handler, {'mongo_client': mongo_client}),
         (r'/oauth2/callback', OAuth2Handler, {'mongo_client': mongo_client}),
-        (r'/current_user', CurrentUserHandler),
+        # APIS
+        (r'/api/nodes', NodesHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),
+        (r'/api/jobs', JobsHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),
+        (r'/api/jobs/(?P<job>[\w_-]+)/log', JobLogHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),
+        (r'/api/jobs/(?P<job>[\w_-]+)/log/(?P<version>\d+|current)', JobLogHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),
+        (r'/api/jobs/(?P<job>[\w_-]+)/log/version', JobLogVersionHandler, {'k8s_client': k8s_client}),
+        (r'/api/job/stop/(?P<job>[\w_\-\.]+)', StopJobHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),
+        (r'/api/job/restart/(?P<job>[\w_\-\.]+)', RestartJobHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),
+        (r'/api/job/tensorboard/(?P<job>[\w_\-\.]+)', TensorBoardHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),
+        (r'/api/repos', ReposHandler, {'mongo_client': mongo_client}),
+        (r'/api/current_user', CurrentUserHandler),
+
 
     ], **app_kwargs)
     return application

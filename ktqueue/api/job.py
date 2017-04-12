@@ -298,7 +298,12 @@ class JobsHandler(BaseHandler):
             only part of fields can be modified.
         """
         body_arguments = json.loads(self.request.body.decode('utf-8'))
-        update_data = {k: v for k, v in body_arguments.items() if k in ('hide', 'comments', 'tags', 'fav', 'node')}
+
+        allowedFields = ['hide', 'comments', 'tags', 'fav']
+        job = self.jobs_collection.find_one({'_id': bson.ObjectId(body_arguments['_id'])})
+        if job['status'] in ('ManualStop', 'Completed'):
+            allowedFields += ['node', 'gpu_num', 'image', 'command', 'volumeMounts']
+        update_data = {k: v for k, v in body_arguments.items() if k in allowedFields}
         self.jobs_collection.update_one({'_id': bson.ObjectId(body_arguments['_id'])}, {'$set': update_data})
         ret = self.jobs_collection.find_one({'_id': bson.ObjectId(body_arguments['_id'])})
         ret['_id'] = str(ret['_id'])

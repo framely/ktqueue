@@ -33,7 +33,7 @@
          <div class="job-expand-item"><label>command: </label><div>{{ scope.row.command }}</div></div>
          <div class="job-expand-item"><label>comments: </label><div><pre>{{ scope.row.comments }}</pre></div></div>
          <div class="job-expand-item"><label>Edit: </label><el-button @click="showEditJob(scope.$index, jobsData.data)" type="text" size="small">Edit</el-button></div>
-         <div class="job-expand-item"><label>Clone: </label><el-button @click="showCopyJob(scope.$index, jobsData.data)" type="text" size="small">Clone</el-button></div>
+         <div class="job-expand-item"><label>Clone: </label><el-button @click="showCloneJob(scope.$index, jobsData.data)" type="text" size="small">Clone</el-button></div>
          <div class="job-expand-item">
            <label>Control: </label>
            <el-button v-if="scope.row.status.indexOf('Completed') != -1 || scope.row.status == 'ManualStop' || scope.row.status == 'FetchError'"  @click="restartJob(scope.$index, jobsData.data)" type="text" size="small">Restart</el-button>
@@ -123,7 +123,8 @@
       :nodes="nodes" :repos="repos"
       :show="editJobDialog.visible"
       :data="editJobDialog.data"
-      @confirm="createJob"
+      :disabled-fields="editJobDialog.disabledFields"
+      @confirm="onConfirmEdit"
       @cancel="() => editJobDialog.visible=false"
     />
   </div>
@@ -166,7 +167,9 @@ export default {
       editJobDialog: {
         visible: false,
         title: 'Create Job',
-        data: Object.assign({}, defaultJobData)
+        data: Object.assign({}, defaultJobData),
+        disabledFields: {},
+        type: 'create'
       },
       repos: [],
       nodes: []
@@ -188,11 +191,15 @@ export default {
     showCreateJob: function () {
       this.checkAuth()
       this.editJobDialog.title = 'Create job'
+      this.editJobDialog.disabledFields = {}
+      this.editJobDialog.type = 'create'
       this.editJobDialog.visible = true
     },
-    showCopyJob: function (index, tableData) {
+    showCloneJob: function (index, tableData) {
       this.checkAuth()
-      this.editJobDialog.title = 'Copy job'
+      this.editJobDialog.title = 'Clone job'
+      this.editJobDialog.disabledFields = {}
+      this.editJobDialog.type = 'clone'
       var line = tableData[index]
       this.editJobDialog.data = Object.assign({}, line)
       this.editJobDialog.visible = true
@@ -200,8 +207,22 @@ export default {
     showEditJob: function (index, tableData) {
       this.checkAuth()
       this.editJobDialog.title = 'Edit job'
+      this.editJobDialog.disabledFields = {
+        name: true,
+        repo: true,
+        branch: true,
+        // eslint-disable-next-line
+        commit_id: true,
+      }
+      this.editJobDialog.type = 'edit'
       var line = tableData[index]
+      if (line.status !== 'ManualStop' && line.status !== 'Completed') {
+        for (var field in ['node', 'gpu_num', 'image', 'command', 'volumeMounts']) {
+          this.editJobDialog.disabledFields[field] = true
+        }
+      }
       this.editJobDialog.data = Object.assign({}, line)
+      this.editJobDialog.visible = true
     },
     stopJob: function (index, tableData) {
       this.checkAuth()
@@ -319,7 +340,26 @@ export default {
         this.jobsData = resource.body
       })
     },
-    createJob: function (job) {
+    onConfirmEdit: function (job) {
+      if (this.editJobDialog.type === 'edit') {
+        var updateBody = {
+          '_id': job._id,
+          'comments': job.comments
+        }
+        if (job.status === 'ManualStop' || job.status === 'Completed') {
+          for (var field of ['node', 'gpu_num', 'image', 'command', 'volumeMounts']) {
+            updateBody[field] = job[field]
+          }
+        }
+        this.$http.put('/api/jobs', updateBody).then(() => {
+          this.loadJobs(this.jobsData.page)
+          this.editJobDialog.visible = false
+        }).catch((response) => {
+          this.$message.error(response.body)
+          console.error(response.body)
+        })
+        return
+      }
       this.$http.post('/api/jobs', job).then((resource) => {
         this.loadJobs(1)
         this.editJobDialog.visible = false

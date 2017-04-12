@@ -33,6 +33,8 @@ class EventWatcher:
                         await callback(json.loads(line.decode('utf-8')))
                     except Exception as e:
                         logging.exception(e)
+                        logging.exception('Event is:')
+                        logging.exception(line.decode('utf-8'))
                     else:
                         pass
             except Exception as e:
@@ -77,17 +79,20 @@ async def watch_pod(k8s_client):
             jobs_collection.update_one({'name': job_name}, {'$set': {'status': 'Pending'}})
             return
 
-        state = event['object']['status']['containerStatuses'][0]['state']
-        for k, v in state.items():
-            status = (k, v.get('reason', None))
-            status_str = '{}: {}'.format(*status)
-            continue
+        state = {}
+        job_update = {}
+        status = (None, None)
+        if 'containerStatuses' in event['object']['status']:
+            state = event['object']['status']['containerStatuses'][0]['state']
+            for k, v in state.items():
+                status = (k, v.get('reason', None))
+                status_str = '{}: {}'.format(*status)
+                continue
+            job_update['state'] = state
+        else:
+            status_str = '{}: {}'.format(event['object']['status']['phase'], event['object']['status']['reason'])
 
         logging.info('Job {} enter state {}'.format(job_name, status_str))
-
-        job_update = {
-            'state': state
-        }
 
         # update status
         if status == ('terminated', 'Completed'):

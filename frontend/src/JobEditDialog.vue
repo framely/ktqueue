@@ -1,61 +1,61 @@
 <template>
 <el-dialog :title="title" :value="show" @close="() => this.$emit('cancel')" size="large">
-  <el-form ref="form" :model="internalData" label-width="95px">
+  <el-form ref="form" :model="internalData" label-width="95px" >
     <el-form-item label="Name" required>
-      <el-input v-model="internalData.name"></el-input>
+      <el-input v-model="internalData.name" :disabled="disabledFields.name"></el-input>
     </el-form-item>
     <el-form-item label="Node">
-      <el-select v-model="internalData.node" clearable placeholder="Any">
+      <el-select v-model="internalData.node" clearable placeholder="Any" :disabled="disabledFields.node">
         <el-option v-for="item in nodes" :label="item.labels['kubernetes.io/hostname'] + ' (' + (item.gpu_capacity - item.gpu_used) + '/' + item.gpu_capacity + ')'" :value="item.labels['kubernetes.io/hostname']" :key="item.labels['kubernetes.io/hostname']">
         </el-option>
       </el-select>
       <label> (avail/total) </label>
     </el-form-item>
     <el-form-item label="GPUs">
-      <el-input-number v-model="internalData.gpu_num"></el-input-number>
+      <el-input-number v-model="internalData.gpu_num" :disabled="disabledFields.gpu_num"></el-input-number>
     </el-form-item>
     <el-form-item label="Command" required>
-      <el-input type="textarea" :rows=3 v-model="internalData.command"></el-input>
+      <el-input type="textarea" :rows=3 v-model="internalData.command" :disabled="disabledFields.command"></el-input>
     </el-form-item>
     <el-form-item label="Image" required>
-      <el-input v-model="internalData.image"></el-input>
+      <el-input v-model="internalData.image" :disabled="disabledFields.image"></el-input>
     </el-form-item>
     <el-form-item label="Repo">
-      <el-autocomplete v-model="internalData.repo" :fetch-suggestions="repoQuerySearch" style="width: 100%"></el-autocomplete>
+      <el-autocomplete v-model="internalData.repo" :fetch-suggestions="repoQuerySearch" style="width: 100%" :disabled="disabledFields.repo"></el-autocomplete>
     </el-form-item>
     <el-form-item label="Branch">
-      <el-input v-model="internalData.branch"></el-input>
+      <el-input v-model="internalData.branch" :disabled="disabledFields.branch"></el-input>
     </el-form-item>
     <el-form-item label="Commit id">
-      <el-input v-model="internalData.commit_id"></el-input>
+      <el-input v-model="internalData.commit_id" :disabled="disabledFields.commit_id"></el-input>
     </el-form-item>
     <el-form-item label="Comments">
-      <el-input type="textarea" :rows=3 v-model="internalData.comments"></el-input>
+      <el-input type="textarea" :rows=3 v-model="internalData.comments" :disabled="disabledFields.comments"></el-input>
     </el-form-item>
     <el-form-item v-for="(volume, index) in internalData.volumeMounts" :key="volume.key" :label="'Volume'" :rules="{
         required: true, message: 'volumeMounts should not be empty', trigger: 'blur'
       }">
       <el-col :span="10">
         <el-form-item>
-          <el-input placeholder="hostPath" v-model="volume.hostPath" style="width: 100%;"></el-input>
+          <el-input placeholder="hostPath" v-model="volume.hostPath" style="width: 100%;" :disabled="disabledFields.volumeMounts"></el-input>
         </el-form-item>
       </el-col>
       <span class="inline-form-span"> </span>
       <el-col :span="10">
         <el-form-item>
-          <el-input placeholder="mountPath" v-model="volume.mountPath" style="width: 100%;"></el-input>
+          <el-input placeholder="mountPath" v-model="volume.mountPath" style="width: 100%;" :disabled="disabledFields.volumeMounts"></el-input>
         </el-form-item>
       </el-col>
       <span class="inline-form-span"> </span>
-      <el-button @click.prevent="removeVolume(volume)">删除</el-button>
+      <el-button @click.prevent="removeVolume(volume)" :disabled="disabledFields.volumeMounts">Delete</el-button>
     </el-form-item>
     <el-form-item>
-      <el-button @click="addVolumeMount">Add volume</el-button>
+      <el-button @click="addVolumeMount" :disabled="disabledFields.volumeMounts">Add volumeMounts</el-button>
     </el-form-item>
   </el-form>
   <span slot="footer" class="dialog-footer">
-    <el-button @click="()=>this.$emit('cancel')">取 消</el-button>
-    <el-button type="primary" @click="() => this.$emit('confirm', this.internalData)">确 定</el-button>
+    <el-button @click="()=>this.$emit('cancel')">Cancel</el-button>
+    <el-button type="primary" @click="() => this.$emit('confirm', this.internalData)">Confirm</el-button>
   </span>
 </el-dialog>
 </template>
@@ -80,6 +80,10 @@ export default {
     data: {
       type: Object,
       default: () => Object.assign({}, defaultJobData)
+    },
+    disabledFields: {
+      type: Object,
+      default: () => ({})
     }
   },
   data () {

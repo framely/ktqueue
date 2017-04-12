@@ -32,8 +32,8 @@
          <div class="job-expand-item"><label>commit_id: </label><div>{{ scope.row.commit_id }}</div></div>
          <div class="job-expand-item"><label>command: </label><div>{{ scope.row.command }}</div></div>
          <div class="job-expand-item"><label>comments: </label><div><pre>{{ scope.row.comments }}</pre></div></div>
-         <div class="job-expand-item"><label>Edit: </label><el-button @click="editJob(scope.$index, jobsData.data)" type="text" size="small">Edit</el-button></div>
-         <div class="job-expand-item"><label>Clone: </label><el-button @click="copyJob(scope.$index, jobsData.data)" type="text" size="small">Clone</el-button></div>
+         <div class="job-expand-item"><label>Edit: </label><el-button @click="showEditJob(scope.$index, jobsData.data)" type="text" size="small">Edit</el-button></div>
+         <div class="job-expand-item"><label>Clone: </label><el-button @click="showCopyJob(scope.$index, jobsData.data)" type="text" size="small">Clone</el-button></div>
          <div class="job-expand-item">
            <label>Control: </label>
            <el-button v-if="scope.row.status.indexOf('Completed') != -1 || scope.row.status == 'ManualStop' || scope.row.status == 'FetchError'"  @click="restartJob(scope.$index, jobsData.data)" type="text" size="small">Restart</el-button>
@@ -118,77 +118,24 @@
         </template>
       </el-table-column>
     </el-table>
-    <el-dialog :title="createJobDialog.title" v-model="createJobDialog.visible" size="large">
-      <el-form ref="form" :model="createJobDialog.data" label-width="95px">
-        <el-form-item label="Name" required>
-         <el-input v-model="createJobDialog.data.name"></el-input>
-        </el-form-item>
-        <el-form-item label="Node">
-          <el-select v-model="createJobDialog.data.node" clearable placeholder="Any">
-            <el-option
-              v-for="item in nodes"
-              :label="item.labels['kubernetes.io/hostname'] + ' (' + (item.gpu_capacity - item.gpu_used) + '/' + item.gpu_capacity + ')'"
-              :value="item.labels['kubernetes.io/hostname']"
-              :key="item.labels['kubernetes.io/hostname']">
-            </el-option>
-          </el-select>
-          <label> (avail/total) </label>
-        </el-form-item>
-        <el-form-item label="GPUs">
-         <el-input-number v-model="createJobDialog.data.gpu_num"></el-input-number>
-        </el-form-item>
-        <el-form-item label="Command" required>
-         <el-input type="textarea" :rows=3 v-model="createJobDialog.data.command"></el-input>
-        </el-form-item>
-        <el-form-item label="Image" required>
-         <el-input v-model="createJobDialog.data.image"></el-input>
-        </el-form-item>
-        <el-form-item label="Repo">
-          <el-autocomplete v-model="createJobDialog.data.repo"
-          :fetch-suggestions="repoQuerySearch"
-          style="width: 100%"></el-autocomplete>
-        </el-form-item>
-        <el-form-item label="Branch">
-         <el-input v-model="createJobDialog.data.branch"></el-input>
-        </el-form-item>
-        <el-form-item label="Commit id">
-         <el-input v-model="createJobDialog.data.commit_id"></el-input>
-        </el-form-item>
-        <el-form-item label="Comments">
-         <el-input type="textarea" :rows=3 v-model="createJobDialog.data.comments"></el-input>
-        </el-form-item>
-        <el-form-item v-for="(volume, index) in createJobDialog.data.volumeMounts"  :key="volume.key" :label="'Volume'" :rules="{
-            required: true, message: 'volumeMounts should not be empty', trigger: 'blur'
-          }">
-          <el-col :span="10">
-            <el-form-item>
-              <el-input placeholder="hostPath" v-model="volume.hostPath" style="width: 100%;"></el-input>
-            </el-form-item>
-          </el-col>
-          <span class="inline-form-span"> </span>
-          <el-col :span="10">
-           <el-form-item>
-             <el-input placeholder="mountPath" v-model="volume.mountPath" style="width: 100%;"></el-input>
-           </el-form-item>
-          </el-col>
-          <span class="inline-form-span"> </span>
-          <el-button @click.prevent="removeVolume(volume)">删除</el-button>
-        </el-form-item>
-        <el-form-item>
-          <el-button @click="addVolumeMount">Add volume</el-button>
-        </el-form-item>
-      </el-form>
-      <span slot="footer" class="dialog-footer">
-        <el-button @click="createJobDialog.visible = false">取 消</el-button>
-        <el-button type="primary" @click="createJob">确 定</el-button>
-      </span>
-    </el-dialog>
+    <job-edit-dialog
+      :title="editJobDialog.title"
+      :nodes="nodes" :repos="repos"
+      :show="editJobDialog.visible"
+      :data="editJobDialog.data"
+      @confirm="createJob"
+      @cancel="() => editJobDialog.visible=false"
+    />
   </div>
 </template>
 <script>
 import moment from 'moment'
+import JobEditDialog from './JobEditDialog.vue'
+import { defaultJobData } from './const.js'
 export default {
-  template: '#tq-jobs-template',
+  components: {
+    JobEditDialog
+  },
   props: {
     checkAuth: Function,
     currentUser: String
@@ -216,23 +163,10 @@ export default {
         loading: false,
         data: []
       },
-      createJobDialog: {
+      editJobDialog: {
         visible: false,
         title: 'Create Job',
-        data: {
-          name: '',
-          node: null,
-          // eslint-disable-next-line
-          gpu_num: 1, // TODO
-          command: '',
-          image: '',
-          repo: '',
-          branch: '',
-          // eslint-disable-next-line
-          commit_id: '', // TODO
-          comments: '',
-          volumeMounts: []
-        }
+        data: Object.assign({}, defaultJobData)
       },
       repos: [],
       nodes: []
@@ -253,19 +187,21 @@ export default {
     moment,
     showCreateJob: function () {
       this.checkAuth()
-      this.createJobDialog.title = 'Create Job'
-      this.createJobDialog.visible = true
+      this.editJobDialog.title = 'Create job'
+      this.editJobDialog.visible = true
     },
-    copyJob: function (index, tableData) {
+    showCopyJob: function (index, tableData) {
       this.checkAuth()
+      this.editJobDialog.title = 'Copy job'
       var line = tableData[index]
-      Object.assign(this.createJobDialog.data, line)
-      this.createJobDialog.visible = true
+      this.editJobDialog.data = Object.assign({}, line)
+      this.editJobDialog.visible = true
     },
-    editJob: function (index, tableData) {
+    showEditJob: function (index, tableData) {
       this.checkAuth()
+      this.editJobDialog.title = 'Edit job'
       var line = tableData[index]
-      Object.assign(this.createJobDialog.data, line)
+      this.editJobDialog.data = Object.assign({}, line)
     },
     stopJob: function (index, tableData) {
       this.checkAuth()
@@ -281,7 +217,7 @@ export default {
             message: jobName + ' stopped!'
           })
           this.loadJobs(this.jobsData.page)
-          this.createJobDialog.visible = false
+          this.editJobDialog.visible = false
         })
       }).catch(() => {
         this.$message({
@@ -304,7 +240,7 @@ export default {
             message: jobName + ' Restarted!'
           })
           this.loadJobs(this.jobsData.page)
-          this.createJobDialog.visible = false
+          this.editJobDialog.visible = false
         })
       }).catch(() => {
         this.$message({
@@ -383,38 +319,14 @@ export default {
         this.jobsData = resource.body
       })
     },
-    createJob: function () {
-      this.$http.post('/api/jobs', this.createJobDialog.data).then((resource) => {
+    createJob: function (job) {
+      this.$http.post('/api/jobs', job).then((resource) => {
         this.loadJobs(1)
-        this.createJobDialog.visible = false
+        this.editJobDialog.visible = false
       }).catch((response) => {
         this.$message.error(response.body)
         console.error(response.body)
       })
-    },
-    repoQuerySearch: function (queryString, cb) {
-      var repos = this.repos
-      var results = queryString ? repos.filter(this.createFilter(queryString)) : repos
-      console.log(results)
-      cb(results)
-    },
-    createFilter: function (queryString) {
-      return function (candidate) {
-        return (candidate.value.indexOf(queryString.toLowerCase()) !== -1)
-      }
-    },
-    addVolumeMount: function () {
-      this.createJobDialog.data.volumeMounts.push({
-        hostPath: '',
-        mountPath: '',
-        key: Date.now()
-      })
-    },
-    removeVolume: function (volume) {
-      var index = this.createJobDialog.data.volumeMounts.indexOf(volume)
-      if (index !== -1) {
-        this.createJobDialog.data.volumeMounts.splice(index, 1)
-      }
     },
     jobHideChange: function (line, event) {
       this.$http.put('/api/jobs', {

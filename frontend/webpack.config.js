@@ -1,8 +1,11 @@
 var path = require('path')
 var webpack = require('webpack')
-
+var ExtractTextPlugin = require('extract-text-webpack-plugin')
 module.exports = {
-  entry: './src/main.js',
+  entry: {
+    app: './src/main.js',
+    vendor: ['element-ui', 'vue', 'vue-router', 'vue-resource', 'moment']
+  },
   output: {
     path: path.resolve(__dirname, './dist'),
     publicPath: '/dist/',
@@ -31,7 +34,10 @@ module.exports = {
       },
       {
         test: /\.css$/,
-        loader: 'style-loader!css-loader'
+        loader: ExtractTextPlugin.extract({
+          fallback: 'style-loader',
+          use: 'css-loader'
+        })
       },
       {
         test: /\.(eot|svg|ttf|woff|woff2)(\?\S*)?$/,
@@ -65,6 +71,10 @@ module.exports = {
   performance: {
     hints: false
   },
+  plugins: [
+    new ExtractTextPlugin('styles.css'),
+    new webpack.optimize.CommonsChunkPlugin({ name: 'vendor', filename: 'vendor.js' })
+  ],
   devtool: '#eval-source-map'
 }
 

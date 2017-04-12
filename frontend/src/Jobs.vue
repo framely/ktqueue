@@ -241,12 +241,12 @@ export default {
   },
   mounted: function () {
     this.loadJobs(this.jobsData.page, this.jobsData.pageSize)
-    this.$http.get('/api/repos?pageSize=0&repo_only=1').then(function (resource) {
+    this.$http.get('/api/repos?pageSize=0&repo_only=1').then((resource) => {
       for (var i = 0; i < resource.body.data.length; i++) {
         this.repos.push({ 'value': resource.body.data[i].repo })
       }
     })
-    this.$http.get('/api/nodes').then(function (resource) {
+    this.$http.get('/api/nodes').then((resource) => {
       this.nodes = resource.body.items
     })
   },
@@ -298,7 +298,7 @@ export default {
         confirmButtonText: 'Confirm',
         cancelButtonText: 'Cancel',
         type: 'warning'
-      }).then(function () {
+      }).then(() => {
         this.$http.post('/api/job/restart/' + jobName, {}).then((resource) => {
           this.$message({
             type: 'success',
@@ -324,7 +324,7 @@ export default {
         this.$http.post('/api/job/tensorboard/' + line.name, { 'logdir': data.value }).then(() => {
           this.loadJobs(this.jobsData.page)
         })
-      }).catch(function () {
+      }).catch(() => {
 
       })
     },
@@ -379,16 +379,16 @@ export default {
         }
       }
       this.$router.push({ query: routerQuery })
-      this.$http.get('/api/jobs', { params: params }).then(function (resource) {
+      this.$http.get('/api/jobs', { params: params }).then((resource) => {
         resource.body.loading = false
         this.jobsData = resource.body
       })
     },
     createJob: function () {
-      this.$http.post('/api/jobs', this.createJobDialog.data).then(function (resource) {
+      this.$http.post('/api/jobs', this.createJobDialog.data).then((resource) => {
         this.loadJobs(1)
         this.createJobDialog.visible = false
-      }).catch(function (response) {
+      }).catch((response) => {
         this.$message.error(response.body)
         console.error(response.body)
       })
@@ -421,9 +421,9 @@ export default {
       this.$http.put('/api/jobs', {
         '_id': line._id,
         'hide': event
-      }).then(function () {
+      }).then(() => {
         line.hide = event
-      }).catch(function () {
+      }).catch(() => {
         line.hide = !event
       })
       return !event
@@ -437,9 +437,9 @@ export default {
       this.$http.put('/api/jobs', {
         '_id': line._id,
         'fav': !line.fav
-      }).then(function () {
+      }).then(() => {
         line.fav = !line.fav
-      }).catch(function () {
+      }).catch(() => {
       })
     },
     jobsFilterChange: function (filter) {

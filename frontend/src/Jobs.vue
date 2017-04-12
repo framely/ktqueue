@@ -85,7 +85,6 @@
         label="status"
         prop="status"
         width="120"
-
         header-align="left"
         :show-overflow-tooltip="true">
       </el-table-column>
@@ -187,7 +186,7 @@
   </div>
 </template>
 <script>
-import * as moment from 'moment'
+import moment from 'moment'
 export default {
   template: '#tq-jobs-template',
   props: {
@@ -251,7 +250,7 @@ export default {
     })
   },
   methods: {
-    moment: moment,
+    moment,
     showCreateJob: function () {
       this.checkAuth()
       this.createJobDialog.title = 'Create Job'
@@ -473,14 +472,14 @@ export default {
 <style lang="scss">
 .table-header {
   padding: .5em 0;
-}
-.table-header .el-pagination {
-  display: inline-block;
-}
-.table-header .el-pagination,
-.table-header .el-button,
-.table-header .el-radio-group {
-  vertical-align: middle;;
+  .el-pagination {
+    display: inline-block;
+  }
+  .el-pagination,
+  .el-button,
+  .el-radio-group {
+    vertical-align: middle;;
+  }
 }
 .inline-form-span {
   width: 1em;
@@ -491,25 +490,25 @@ export default {
   margin-bottom: 10px;
   overflow: auto;
   zoom: 1;
-}
-.job-expand-item > label {
-  width: 100px;
-  float: left;
-  text-align: right;
-  padding-right: 1em;
-  box-sizing: border-box;
-}
-.job-expand-item .el-tag+.el-tag {
-  margin-left: 1em;
-}
-.job-expand-item > div {
-  margin-left: 100px;
-}
-.job-expand-item  .el-button {
-  padding: 0;
-}
-.job-expand-item > div > pre{
-  margin: 0;
+  > div {
+    margin-left: 100px;
+    > pre{
+      margin: 0;
+    }
+  }
+  > label {
+    width: 100px;
+    float: left;
+    text-align: right;
+    padding-right: 1em;
+    box-sizing: border-box;
+  }
+  .el-tag+.el-tag {
+    margin-left: 1em;
+  }
+  .el-button {
+    padding: 0;
+  }
 }
 .status-stop-wrap {
   display: inline-block;

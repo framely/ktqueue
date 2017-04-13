@@ -217,7 +217,7 @@ export default {
       this.editJobDialog.type = 'edit'
       var line = tableData[index]
       if (line.status !== 'ManualStop' && line.status !== 'Completed') {
-        for (var field in ['node', 'gpu_num', 'image', 'command', 'volumeMounts']) {
+        for (var field of ['node', 'gpu_num', 'image', 'command', 'volumeMounts']) {
           this.editJobDialog.disabledFields[field] = true
         }
       }

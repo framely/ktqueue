@@ -104,7 +104,6 @@ async def watch_pod(k8s_client):
 
         # update Running Node & used GPU
         if status[0] == 'terminated':
-            job_update['runningNode'] = None
             node_used_gpus[event['object']['spec']['nodeName']].pop(job_name, None)
         elif status[0] == 'waiting':  # waiting doesn't use GPU
             pass

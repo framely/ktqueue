@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div ref="rootdiv">
     <div class="table-header">
       <el-button size="small" type="primary" @click="showCreateJob">Create Job</el-button>
       <el-radio-group v-model="jobsFilter" size="small" @change="jobsFilterChange">
@@ -22,8 +22,7 @@
       :data="jobsData.data"
       style="width: 100%"
       :row-class-name="tableRowClassName"
-      @filter-change="jobsFilterChange"
-      v-loading="jobsData.loading">
+      @filter-change="jobsFilterChange">
       <el-table-column type="expand">
        <template scope="scope">
          <div class="job-expand-item"><label>name: </label><div>{{ scope.row.name }}</div></div>
@@ -131,6 +130,7 @@
 </template>
 <script>
 import moment from 'moment'
+import { Loading } from 'element-ui'
 import JobEditDialog from './JobEditDialog.vue'
 import { defaultJobData } from './const.js'
 export default {
@@ -149,6 +149,7 @@ export default {
       user: null
     }
     return {
+      loading: null,
       defaultFilter: defaultFilter,
       jobsFilter: this.$route.query.jobsFilter || defaultFilter.jobsFilter,
       jobsFilterUser: this.$route.query.user || defaultFilter.jobsFilterUser,
@@ -161,7 +162,6 @@ export default {
         count: 0,
         pageSize: parseInt(this.$route.query.pageSize || defaultFilter.pageSize),
         page: parseInt(this.$route.query.page || defaultFilter.page),
-        loading: false,
         data: []
       },
       editJobDialog: {
@@ -307,8 +307,7 @@ export default {
     },
     loadJobs: function (page, pageSize) {
       pageSize = pageSize || this.jobsData.pageSize
-
-      this.jobsData.loading = true
+      this.loading = Loading.service({ target: this.$refs.rootdiv })
       var params = {}
       params['page'] = page
       if (this.jobsFilter === 'Hidden') {
@@ -336,7 +335,9 @@ export default {
       }
       this.$router.push({ query: routerQuery })
       this.$http.get('/api/jobs', { params: params }).then((resource) => {
-        resource.body.loading = false
+        if (this.loading) {
+          this.loading.close()
+        }
         this.jobsData = resource.body
       })
     },

@@ -1,6 +1,7 @@
 # encoding: utf-8
 import os
 import re
+import logging
 from ktqueue import settings
 
 
@@ -24,6 +25,10 @@ async def save_job_log(job_name, pod_name, k8s_client):
         method='GET',
         api='/api/v1/namespaces/{namespace}/pods/{pod_name}/log'.format(namespace=settings.job_namespace, pod_name=pod_name)
     )
+    logging.info('save log for {}, resp.status = {}'.format(job_name, resp.status))
+    if resp.status > 300:
+        resp.close()
+        return
 
     max_version = 0
     for version in get_log_versions(job_name=job_name):
@@ -50,7 +55,7 @@ async def k8s_delete_job(k8s_client, job, pod_name=None, save_log=True):
 
     if save_log:
         await save_job_log(job_name=job, pod_name=pod_name, k8s_client=k8s_client)
-    
+
     await k8s_client.call_api(
         method='DELETE',
         api='/apis/batch/v1/namespaces/{namespace}/jobs/{name}'.format(namespace=settings.job_namespace, name=job)

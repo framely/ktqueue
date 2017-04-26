@@ -1,6 +1,5 @@
 # encoding: utf-8
 import os
-import logging
 import aiohttp
 import kubernetes
 import json

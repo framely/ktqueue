@@ -17,10 +17,10 @@ class Cloner:
     __ssh_pattern = re.compile(r'\w+@[\w.]+:[\w-]+\/[\w\-+]+\.git')
     __ref_pattern = re.compile(r'(?P<hash>\w+)\s(?P<ref>[\w/\-]+)')
 
-    def __init__(self, repo, dst_directory, branch='master', commit_id=None):
+    def __init__(self, repo, dst_directory, branch=None, commit_id=None):
         self.repo = repo.strip()
         self.dst_directory = dst_directory
-        self.branch = branch
+        self.branch = branch or 'master'
         self.commit_id = commit_id
 
         self.mongo_client = pymongo.MongoClient('ktqueue-mongodb')
@@ -160,7 +160,7 @@ class Cloner:
         # Arcive commit_id
         logging.info('Arciving {}:{}'.format(self.repo, self.commit_id))
         with open(archive_file, 'wb') as f:
-            proc = await asyncio.create_subprocess_exec(*['git', 'archive', self.commit_id, '--forma', 'tar.gz'],
+            proc = await asyncio.create_subprocess_exec(*['git', 'archive', self.commit_id, '--format', 'tar.gz'],
                                                         stdout=f, cwd=self.repo_path)
             retcode = await proc.wait()
             if retcode != 0:

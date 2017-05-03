@@ -33,7 +33,6 @@ class GithubOAuth2StartHandler(tornado.web.RequestHandler, tornado.auth.OAuth2Mi
             resp = await client.fetch(request)
             resp = json.loads(resp.body.decode('utf-8'))
             access_token = resp.get('access_token', None)
-            print(access_token)
             if not access_token:
                 raise Exception('Can not get access_token')
             request = tornado.httpclient.HTTPRequest(
@@ -51,6 +50,7 @@ class GithubOAuth2StartHandler(tornado.web.RequestHandler, tornado.auth.OAuth2Mi
             data = {
                 'provider': 'github',
                 'id': resp['login'],
+                'access_token': access_token,
                 'data': resp
             }
             self.mongo_client.ktqueue.oauth.update_one(
@@ -65,6 +65,7 @@ class GithubOAuth2StartHandler(tornado.web.RequestHandler, tornado.auth.OAuth2Mi
                 redirect_uri=ktqueue.settings.oauth2_callback,
                 client_id=ktqueue.settings.oauth2_clinet_id,
                 client_secret=ktqueue.settings.oauth2_client_secret,
+                scope=['repo'],
             )
 
         return

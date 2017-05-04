@@ -6,7 +6,10 @@
     <h2 id="tq-title">KTQueue</h2>
     <el-menu-item index="/jobs" :route="{path: '/jobs'}">Jobs</el-menu-item>
     <el-menu-item index="/repos" :route="{path: '/repos'}">Repos</el-menu-item>
-    <el-menu-item v-if="currentUser" index="currentUser" :route="{}">{{currentUser}}</el-menu-item>
+    <el-submenu v-if="currentUser" index="currentUser">
+      <template slot="title">{{currentUser}}</template>
+      <el-menu-item index="logout" :route="{}" @click="logout">Logout</el-menu-item>
+    </el-submenu>
     <el-menu-item v-else index="login" :route="{}"><a href="/oauth2/start">Login</a></el-menu-item>
   </el-menu>
   <router-view :check-auth="checkAuth" :current-user="currentUser"></router-view>
@@ -39,6 +42,14 @@ export default {
         return false
       }
       return true
+    },
+    logout () {
+      this.$http.delete('/api/current_user').then(resource => {
+        this.currentUser = null
+        this.$message.success('Successful logout')
+      }).catch(resource => {
+        this.$message.errr('Can not logout')
+      })
     }
   }
 }

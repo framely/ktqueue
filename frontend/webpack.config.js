@@ -63,10 +63,13 @@ module.exports = {
     port: 8081,
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
-        secure: false,
-        changeOrigin: true
-      }
+        target: 'http://localhost:8080'
+      },
+      '/oauth2': {
+        target: 'http://localhost:8080'
+      },
+      secure: false,
+      changeOrigin: true
     }
   },
   performance: {

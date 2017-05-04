@@ -19,6 +19,14 @@
         label="repo"
         :show-overflow-tooltip="true">
       </el-table-column>
+      <el-table-column label="Action" width="200">
+        <template scope="scope">
+          <el-button
+            size="small"
+            type="danger"
+            @click="handleDelete(scope.row)">Delete</el-button>
+        </template>
+      </el-table-column>
     </el-table>
     <el-dialog :title="createRepoDialog.title" v-model="createRepoDialog.visible" size="large">
       <el-form ref="form" :model="createRepoDialog.data" label-width="80px">
@@ -86,6 +94,20 @@ export default {
       this.$http.post('/api/repos', this.createRepoDialog.data).then(function (resource) {
         this.loadRepos(1)
         this.createRepoDialog.visible = false
+      })
+    },
+    handleDelete (row) {
+      this.$confirm('Do you really want to Delete ' + row.repo + '?', 'Delete Repo', {
+        confirmButtonText: 'Confirm',
+        cancelButtonText: 'Cancel',
+        type: 'warning'
+      }).then(() => {
+        this.$http.delete(`/api/repos/${row._id}`).then(resource => {
+          this.loadRepos(1)
+        }).catch(resource => {
+          this.$message.error(resource.body)
+          console.error(resource.body)
+        })
       })
     }
   }

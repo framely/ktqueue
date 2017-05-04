@@ -10,3 +10,9 @@ class CurrentUserHandler(BaseHandler):
             'user': self.get_current_user(),
             'auth_required': ktqueue.settings.auth_required == '1'
         })
+
+    def delete(self):
+        self.clear_cookie('user')
+        self.finish({
+            'msg': 'ok'
+        })

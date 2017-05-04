@@ -65,7 +65,7 @@ class GithubOAuth2StartHandler(tornado.web.RequestHandler, tornado.auth.OAuth2Mi
                 redirect_uri=ktqueue.settings.oauth2_callback,
                 client_id=ktqueue.settings.oauth2_clinet_id,
                 client_secret=ktqueue.settings.oauth2_client_secret,
-                scope=['repo'],
+                scope=['repo'],  # reuquest access to private repository
             )
 
         return

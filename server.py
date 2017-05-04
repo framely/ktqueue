@@ -18,6 +18,7 @@ from ktqueue.api import JobsHandler
 from ktqueue.api import JobLogHandler
 from ktqueue.api import JobLogVersionHandler
 from ktqueue.api import ReposHandler
+from ktqueue.api import RepoHandler
 from ktqueue.api import NodesHandler
 from ktqueue.api import StopJobHandler
 from ktqueue.api import RestartJobHandler
@@ -76,6 +77,7 @@ def get_app():
         (r'/api/job/restart/(?P<job>[\w_\-\.]+)', RestartJobHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),
         (r'/api/job/tensorboard/(?P<job>[\w_\-\.]+)', TensorBoardHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),
         (r'/api/repos', ReposHandler, {'mongo_client': mongo_client}),
+        (r'/api/repos/(?P<id>[0-9a-f]+)', RepoHandler, {'mongo_client': mongo_client}),
         (r'/api/current_user', CurrentUserHandler),
 
 

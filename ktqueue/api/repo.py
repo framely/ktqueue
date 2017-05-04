@@ -3,6 +3,7 @@
 import json
 import re
 
+import bson
 import tornado.web
 
 from .utils import BaseHandler
@@ -15,7 +16,7 @@ class ReposHandler(BaseHandler):
 
     def initialize(self, mongo_client):
         self.mongo_client = mongo_client
-        self.repos_collection = self.mongo_client.ktqueue.credentials
+        self.repos_collection = self.mongo_client.ktqueue.repos
 
     @tornado.web.authenticated
     async def post(self):
@@ -53,13 +54,6 @@ class ReposHandler(BaseHandler):
         self.repos_collection.update_one({'repo': repo}, {'$set': body}, upsert=True)
         self.finish(json.dumps({'message': 'repo {} successful added.'.format(repo)}))
 
-    async def delete(self):
-        body = json.loads(self.request.body.decode('utf-8'))
-        repo = body['repo'].strip()
-
-        self.mongo_client.ktqueue.credentials.delete_one({'repo': repo})
-        self.finish(json.dumps({'message': 'repo {} successful added.'.format(repo)}))
-
     async def get(self):
         page = int(self.get_argument('page', 1))
         page_size = int(self.get_argument('pageSize', 20))
@@ -76,3 +70,16 @@ class ReposHandler(BaseHandler):
             'pageSize': page_size,
             'data': repos,
         }))
+
+
+class RepoHandler(BaseHandler):
+
+    def initialize(self, mongo_client):
+        self.mongo_client = mongo_client
+        self.repos_collection = self.mongo_client.ktqueue.repos
+
+    @tornado.web.authenticated
+    async def delete(self, id):
+        print(id)
+        self.repos_collection.delete_one({'_id': bson.ObjectId(id)})
+        self.finish({'message': 'repos successful added.'})

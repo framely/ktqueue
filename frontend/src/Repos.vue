@@ -1,54 +1,50 @@
 <template>
-  <div>
-    <div class="table-header">
-      <el-button size="small" type="primary" @click="checkAuth(), createRepoDialog.visible = true">Create Repo</el-button>
-      <el-pagination
-        layout="prev, pager, next"
-        :page-size="reposData.pageSize"
-        :total="reposData.total"
-        @current-change="loadRepos"
-        >
-      </el-pagination>
-    </div>
-    <el-table
-      :data="reposData.data"
-      style="width: 100%"
-      v-loading="reposData.loading">
-      <el-table-column
-        prop="repo"
-        label="repo"
-        :show-overflow-tooltip="true">
-      </el-table-column>
-      <el-table-column label="Action" width="200">
-        <template scope="scope">
+<div>
+  <div class="table-header">
+    <el-button size="small" type="primary" @click="checkAuth(), createRepoDialog.visible = true">Create Repo</el-button>
+    <el-pagination layout="prev, pager, next" :page-size="reposData.pageSize" :total="reposData.total" @current-change="loadRepos">
+    </el-pagination>
+  </div>
+  <el-table :data="reposData.data" style="width: 100%" v-loading="reposData.loading">
+    <el-table-column prop="repo" label="repo" :show-overflow-tooltip="true">
+    </el-table-column>
+    <el-table-column label="Action" width="200">
+      <template scope="scope">
           <el-button
             size="small"
             type="danger"
             @click="handleDelete(scope.row)">Delete</el-button>
         </template>
-      </el-table-column>
-    </el-table>
-    <el-dialog :title="createRepoDialog.title" v-model="createRepoDialog.visible" size="large">
-      <el-form ref="form" :model="createRepoDialog.data" label-width="80px">
-        <el-form-item label="Repo">
-         <el-input v-model="createRepoDialog.data.repo"></el-input>
-        </el-form-item>
-        <el-form-item label="ssh_key">
-         <el-input type="textarea" :rows=3 v-model="createRepoDialog.data.ssh_key"></el-input>
-        </el-form-item>
-        <el-form-item label="Username">
-         <el-input v-model="createRepoDialog.data.username"></el-input>
-        </el-form-item>
-        <el-form-item label="Password">
-         <el-input v-model="createRepoDialog.data.password"></el-input>
-        </el-form-item>
-      </el-form>
-      <span slot="footer" class="dialog-footer">
+    </el-table-column>
+  </el-table>
+
+  <el-dialog :title="createRepoDialog.title" v-model="createRepoDialog.visible" size="large">
+    <el-form ref="form" :model="createRepoDialog.data" label-width="80px">
+      <el-form-item label="Repo">
+        <el-input v-model="createRepoDialog.data.repo"></el-input>
+      </el-form-item>
+      <el-form-item label="Auth">
+        <el-radio-group v-model="createRepoDialog.data.authType">
+          <el-radio-button label="ssh_key">SSH-key</el-radio-button>
+          <el-radio-button label="https_password">HTTPS password</el-radio-button>
+        </el-radio-group>
+      </el-form-item>
+      <el-form-item label="SSH Key" v-if="createRepoDialog.data.authType == 'ssh_key'">
+        <el-input type="textarea" :rows="3" v-model="createRepoDialog.sshKey"></el-input>
+      </el-form-item>
+      <el-form-item label="Username" v-if="createRepoDialog.data.authType == 'https_password'">
+        <el-input v-model="createRepoDialog.username"></el-input>
+      </el-form-item>
+      <el-form-item label="Password" v-if="createRepoDialog.data.authType == 'https_password'">
+        <el-input v-model="createRepoDialog.password" type="password"></el-input>
+      </el-form-item>
+    </el-form>
+    <span slot="footer" class="dialog-footer">
         <el-button @click="createRepoDialog.visible = false">取 消</el-button>
         <el-button type="primary" @click="createRepo">确 定</el-button>
       </span>
-    </el-dialog>
-  </div>
+  </el-dialog>
+</div>
 </template>
 
 <script>
@@ -69,12 +65,13 @@ export default {
       createRepoDialog: {
         visible: false,
         title: 'Create Repo',
+        sshKey: '',
+        username: '',
+        password: '',
         data: {
           repo: '',
-          //eslint-disable-next-line
-          ssh_key: '', // TODO
-          username: '',
-          password: ''
+          authType: 'ssh_key',
+          credential: {}
         }
       }
     }
@@ -91,6 +88,18 @@ export default {
       })
     },
     createRepo: function () {
+      switch (this.createRepoDialog.data.authType) {
+        case 'https_password':
+          this.createRepoDialog.data.credential = {
+            username: this.createRepoDialog.username,
+            password: this.createRepoDialog.password
+          }
+          break
+        case 'ssh_key':
+          this.createRepoDialog.data.credential = {
+            sshKey: this.createRepoDialog.sshKey
+          }
+      }
       this.$http.post('/api/repos', this.createRepoDialog.data).then(function (resource) {
         this.loadRepos(1)
         this.createRepoDialog.visible = false
@@ -113,3 +122,8 @@ export default {
   }
 }
 </script>
+<style>
+.el-form-item .el-radio-group {
+  vertical-align: middle;
+}
+</style>

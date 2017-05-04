@@ -9,9 +9,10 @@ import tornado.web
 
 from ktqueue.cloner import Cloner
 from .utils import convert_asyncio_task
-from ktqueue.utils import k8s_delete_job
-from ktqueue import settings
 from .utils import BaseHandler
+from ktqueue.utils import k8s_delete_job
+from ktqueue.utils import KTQueueDefaultCredentialProvider
+from ktqueue import settings
 
 
 def generate_job(name, command, node, gpu_num, image, repo, branch, commit_id, comments, mounts, load_nvidia_driver=None):
@@ -131,12 +132,12 @@ def generate_job(name, command, node, gpu_num, image, repo, branch, commit_id, c
     return job
 
 
-async def clone_code(name, repo, branch, commit_id, jobs_collection, job_dir):
+async def clone_code(name, repo, branch, commit_id, jobs_collection, job_dir, crediential):
     # clone code
     if repo:
         try:
             cloner = Cloner(repo=repo, dst_directory=os.path.join(job_dir, 'code'),
-                            branch=branch, commit_id=commit_id)
+                            branch=branch, commit_id=commit_id, crediential=crediential)
             await cloner.clone_and_copy()
         except Exception as e:
             jobs_collection.update_one({'name': name}, {'$set': {'status': 'FetchError'}})
@@ -232,7 +233,8 @@ class JobsHandler(BaseHandler):
         # clone code
         await clone_code(
             name=name, repo=repo, branch=branch, commit_id=commit_id,
-            jobs_collection=self.jobs_collection, job_dir=job_dir)
+            jobs_collection=self.jobs_collection, job_dir=job_dir,
+            crediential=KTQueueDefaultCredentialProvider(repo=repo, user=user, mongo_client=self.mongo_client))
 
         ret = await self.k8s_client.call_api(
             api='/apis/batch/v1/namespaces/{namespace}/jobs'.format(namespace=settings.job_namespace),
@@ -402,7 +404,10 @@ class RestartJobHandler(BaseHandler):
         if job['status'] == 'FetchError':
             await clone_code(
                 name=job['name'], repo=job['repo'], branch=job['branch'], commit_id=job['commit_id'],
-                jobs_collection=self.jobs_collection, job_dir=job_dir)
+                jobs_collection=self.jobs_collection, job_dir=job_dir,
+                crediential=KTQueueDefaultCredentialProvider(
+                    repo=job['repo'], user=self.get_current_user(), mongo_client=self.mongo_client
+                ))
 
         await self.k8s_client.call_api(
             api='/apis/batch/v1/namespaces/{namespace}/jobs'.format(namespace=settings.job_namespace),

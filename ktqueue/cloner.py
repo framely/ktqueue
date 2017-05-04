@@ -7,35 +7,60 @@ import asyncio
 import logging
 import urllib.parse
 
-import pymongo
+
+class GitCredentialProvider:
+    __https_pattern = re.compile(r'https:\/\/(\w+@\w+)?[\w.\/\-+]*.git')
+    __ssh_pattern = re.compile(r'\w+@[\w.]+:[\w-]+\/[\w\-+]+\.git')
+
+    @classmethod
+    def get_repo_type(cls, repo):
+        if cls.__ssh_pattern.match(repo):
+            return 'ssh'
+        elif cls.__https_pattern.match(repo):
+            return'https'
+        return None
+
+    def __init__(self, ssh_key=None, https_username=None, https_password=None):
+        pass
+
+    @property
+    def ssh_key(self):
+        raise NotImplementedError
+
+    @property
+    def https_username(self):
+        raise NotImplementedError
+
+    @property
+    def https_password(self):
+        raise NotImplementedError
 
 
 class Cloner:
     """Do the git clone stuff in another thread"""
 
-    __https_pattern = re.compile(r'https:\/\/(\w+@\w+)?[\w.\/\-+]*.git')
-    __ssh_pattern = re.compile(r'\w+@[\w.]+:[\w-]+\/[\w\-+]+\.git')
     __ref_pattern = re.compile(r'(?P<hash>\w+)\s(?P<ref>[\w/\-]+)')
 
-    def __init__(self, repo, dst_directory, branch=None, commit_id=None):
+    def __init__(self, repo, dst_directory, branch=None, commit_id=None,
+                 crediential=None):
+        """Init
+            crediential: a credientialProvider instance
+        """
         self.repo = repo.strip()
         self.dst_directory = dst_directory
         self.branch = branch or 'master'
         self.commit_id = commit_id
+        self.crediential = crediential
 
-        self.mongo_client = pymongo.MongoClient('ktqueue-mongodb')
         self.ssh_key_path = None
         self.repo_path = None
         self.repo_url = None
+        self.repo_type = GitCredentialProvider.get_repo_type(self.repo)
 
-        if self.__ssh_pattern.match(repo):
-            self.repo_type = 'ssh'
-        elif self.__https_pattern.match(repo):
-            self.repo_type = 'https'
-        else:
+        if not self.repo_type:
             raise Exception('wrong repo type')
 
-        if self.repo_type == 'ssh' and self.mongo_client.ktqueue.credentials.find_one({'repo': self.repo}) is None:
+        if self.repo_type == 'ssh' and self.crediential.ssh_key is None:
             raise Exception('ssh credential for {repo} must be provided.'.format(repo=repo))
 
         self.repo_hash = hashlib.sha1(self.repo.encode('utf-8')).hexdigest()
@@ -47,8 +72,7 @@ class Cloner:
         self.ssh_key_path = os.path.join(ssh_key_dir, 'id')
         if not os.path.exists(self.ssh_key_path):
             with open(self.ssh_key_path, 'w') as f:
-                credential = self.mongo_client.ktqueue.credentials.find_one({'repo': self.repo})
-                f.write(credential['ssh_key'])
+                f.write(self.crediential.ssh_key)
             os.chmod(self.ssh_key_path, 0o600)  # prevent WARNING: UNPROTECTED PRIVATE KEY FILE!
             await asyncio.sleep(1.0)  # os.chmod may have strange behavior, that ssh still permission 644 after too short time
 
@@ -57,31 +81,37 @@ class Cloner:
         env = {**os.environ,
                'GIT_SSH_COMMAND': 'ssh -oStrictHostKeyChecking=no -i {ssh_key_path}'.format(ssh_key_path=ssh_key_path)
                }
-        proc = await asyncio.create_subprocess_exec(*['git'] + args, stdout=asyncio.subprocess.PIPE, env=env, cwd=cwd)
+        proc = await asyncio.create_subprocess_exec(
+            *['git'] + args, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT, env=env, cwd=cwd)
         lines = []
         async for line in proc.stdout:
             logging.debug(line)
-            lines.append(line)
+            lines.append(line.decode())
         recode = await proc.wait()
         return recode, lines
 
     @classmethod
     def add_credential_to_https_url(cls, url, username, password):
         parsed = urllib.parse.urlparse(url)
-        if username is not None and password is not None:
+        if username is not None:
             host_and_port = parsed.hostname
             if parsed.port:
                 host_and_port += ':' + parsed.port
-            parsed._replace(netloc='{}:{}@{}'.format(username, password, host_and_port))
+            if password:
+                parsed = parsed._replace(netloc='{}:{}@{}'.format(username, password, host_and_port))
+            else:
+                parsed = parsed._replace(netloc='{}@{}'.format(username, host_and_port))
         return parsed.geturl()
 
     @classmethod
     async def git_with_https(cls, args, cwd=None):
-        proc = await asyncio.create_subprocess_exec(*['git'] + args, stdout=asyncio.subprocess.PIPE, cwd=cwd)
+        proc = await asyncio.create_subprocess_exec(
+            *['git'] + args, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT, cwd=cwd)
         lines = []
         async for line in proc.stdout:
             logging.debug(line)
-            lines.append(line)
+            lines.append(line.decode())
+
         recode = await proc.wait()
         return recode, lines
 
@@ -109,6 +139,7 @@ class Cloner:
                 args=['clone', self.repo_url, '--recursive', self.repo_hash],
             )
         if retcode != 0:
+            logging.error('\n'.join(retlines))
             raise Exception('clone repo failed with retcode {}.'.format(retcode))
 
     async def fetch(self):
@@ -121,9 +152,10 @@ class Cloner:
         else:
             retcode, retlines = await self.git_with_https(
                 cwd=self.repo_path,
-                args=['fetch'],
+                args=['fetch', self.repo_url, '+refs/heads/*:refs/remotes/origin/*'],
             )
         if retcode != 0:
+            logging.error('\n'.join(retlines))
             logging.error('fetch repo failed with retcode {}.'.format(retcode))
 
     async def clone_and_copy(self, archive_file=None, keep_archive=False):
@@ -134,11 +166,10 @@ class Cloner:
         if self.repo_type == 'ssh':
             await self.prepare_ssh_key(self.repo)
         elif self.repo_type == 'https':
-            credential = self.mongo_client.ktqueue.credentials.find_one({'repo': self.repo})
             self.repo_url = self.repo
-            if credential:
+            if self.crediential.https_username:
                 self.repo_url = self.add_credential_to_https_url(
-                    self.repo, username=credential['username'], password=credential['password'])
+                    self.repo, username=self.crediential.https_username, password=self.crediential.https_password)
 
         if not os.path.exists(self.repo_path):  # Then clone it
             await self.clone()

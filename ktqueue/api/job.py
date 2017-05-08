@@ -340,6 +340,7 @@ class JobLogHandler(BaseHandler):
         self.k8s_client = k8s_client
         self.mongo_client = mongo_client
         self.jobs_collection = mongo_client.ktqueue.jobs
+        self.closed = False
 
     @convert_asyncio_task
     async def get(self, job, version=None):
@@ -352,17 +353,32 @@ class JobLogHandler(BaseHandler):
             api='/api/v1/namespaces/{namespace}/pods'.format(namespace=settings.job_namespace),
             params={'labelSelector': 'job-name={job}'.format(job=job)}
         )
+
         if len(pods['items']):
+            params = {}
+            follow = self.get_argument('follow', None) == 'true'
+            if follow:
+                params['follow'] = 'true'
+                params['tailLines'] = self.get_argument('tailLines', '10')
             pod_name = pods['items'][0]['metadata']['name']
             resp = await self.k8s_client.call_api_raw(
                 method='GET',
-                api='/api/v1/namespaces/{namespace}/pods/{pod_name}/log'.format(namespace=settings.job_namespace, pod_name=pod_name)
+                api='/api/v1/namespaces/{namespace}/pods/{pod_name}/log'.format(namespace=settings.job_namespace, pod_name=pod_name),
+                params=params,
             )
             if resp.status == 200:
-                async for chunk in resp.content.iter_any():
-                    self.write(chunk)
-                resp.close()
-                return
+                try:
+                    async for chunk in resp.content.iter_any():
+                        if self.closed:
+                            break
+                        self.write(chunk)
+                        if follow:
+                            self.flush()
+                finally:
+                    resp.close()
+
+    def on_connection_close(self):
+        self.closed = True
 
 
 class StopJobHandler(BaseHandler):

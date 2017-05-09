@@ -16,6 +16,7 @@ import ktqueue.settings
 from ktqueue.kubernetes_client import kubernetes_client
 from ktqueue.api import JobsHandler
 from ktqueue.api import JobLogHandler
+from ktqueue.api import JobLogWSHandler
 from ktqueue.api import JobLogVersionHandler
 from ktqueue.api import ReposHandler
 from ktqueue.api import RepoHandler
@@ -79,6 +80,8 @@ def get_app():
         (r'/api/repos', ReposHandler, {'mongo_client': mongo_client}),
         (r'/api/repos/(?P<id>[0-9a-f]+)', RepoHandler, {'mongo_client': mongo_client}),
         (r'/api/current_user', CurrentUserHandler),
+        (r'/wsapi/jobs/(?P<job>[\w_-]+)/log', JobLogWSHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),
+
 
 
     ], **app_kwargs)

@@ -1,6 +1,7 @@
 # encoding: utf-8
 from .job import JobsHandler
 from .job import JobLogHandler
+from .job import JobLogWSHandler
 from .job import StopJobHandler
 from .job import RestartJobHandler
 from .job import TensorBoardHandler

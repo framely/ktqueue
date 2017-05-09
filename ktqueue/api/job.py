@@ -6,6 +6,7 @@ import logging
 import bson
 
 import tornado.web
+import tornado.websocket
 
 from ktqueue.cloner import Cloner
 from .utils import convert_asyncio_task
@@ -341,26 +342,22 @@ class JobLogHandler(BaseHandler):
         self.mongo_client = mongo_client
         self.jobs_collection = mongo_client.ktqueue.jobs
         self.closed = False
+        self.follow = False
 
-    @convert_asyncio_task
-    async def get(self, job, version=None):
-        if version and version != 'current':
-            with open(os.path.join('/cephfs/ktqueue/logs', job, 'log.{version}.txt'.format(version=version)), 'r') as f:
-                self.finish(f.read())
-            return
+    async def get_log_stream(self, job, version):
         pods = await self.k8s_client.call_api(
             method='GET',
             api='/api/v1/namespaces/{namespace}/pods'.format(namespace=settings.job_namespace),
             params={'labelSelector': 'job-name={job}'.format(job=job)}
         )
-
         if len(pods['items']):
             params = {}
-            follow = self.get_argument('follow', None) == 'true'
             timeout = 60
-            if follow:
+            if self.follow:
                 params['follow'] = 'true'
-                params['tailLines'] = self.get_argument('tailLines', '10')
+                tailLines = self.get_argument('tailLines', None)
+                if tailLines:
+                    params['tailLines'] = tailLines
                 timeout = 0  # disable timeout checks
             pod_name = pods['items'][0]['metadata']['name']
             resp = await self.k8s_client.call_api_raw(
@@ -368,19 +365,62 @@ class JobLogHandler(BaseHandler):
                 api='/api/v1/namespaces/{namespace}/pods/{pod_name}/log'.format(namespace=settings.job_namespace, pod_name=pod_name),
                 params=params, timeout=timeout
             )
-            if resp.status == 200:
-                try:
-                    async for chunk in resp.content.iter_any():
-                        if self.closed:
-                            break
-                        self.write(chunk)
-                        if follow:
-                            self.flush()
-                finally:
-                    resp.close()
+            return resp
+        return None
+
+    @convert_asyncio_task
+    async def get(self, job, version=None):
+        if version and version != 'current':
+            with open(os.path.join('/cephfs/ktqueue/logs', job, 'log.{version}.txt'.format(version=version)), 'r') as f:
+                self.finish(f.read())
+            return
+        self.follow = self.get_argument('follow', None) == 'true'
+        resp = await self.get_log_stream(job, version)
+        if resp and resp.status == 200:
+            try:
+                async for chunk in resp.content.iter_any():
+                    if self.closed:
+                        break
+                    self.write(chunk)
+                    if self.follow:
+                        self.flush()
+            finally:
+                resp.close()
 
     def on_connection_close(self):
+        print('on_connection_close')
         self.closed = True
+
+
+class JobLogWSHandler(tornado.websocket.WebSocketHandler, JobLogHandler):
+
+    def initialize(self, *args, **kwargs):
+        JobLogHandler.initialize(self, *args, **kwargs)
+        print('initialize')
+
+    def check_origin(self, origin):
+        return True
+
+    @convert_asyncio_task
+    async def open(self, job):
+        self.follow = True
+        resp = await self.get_log_stream(job, 'current')
+        if resp and resp.status == 200:
+            try:
+                async for chunk in resp.content.iter_any():
+                    if self.closed:
+                        break
+                    self.write_message(chunk)
+            except Exception as e:
+                raise
+            finally:
+                resp.close()
+
+    def on_close(self):
+        self.closed = True
+
+    def on_message(self):
+        pass
 
 
 class StopJobHandler(BaseHandler):

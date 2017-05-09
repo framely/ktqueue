@@ -14,10 +14,20 @@
       on-text="Wrap"
       off-text="No wrap">
     </el-switch>
-    <a :download="this.$route.params.jobName + '.' + this.$route.query.version + '.txt'" :href="'jobs/' + this.$route.params.jobName + '/log/' + this.$route.query.version">
+    <el-switch
+      v-if="selectedVersion == 'current'"
+      class="follow-switch"
+      v-model="follow"
+      on-text="Follow"
+      off-text="Static"
+      :width="100"
+      @change="followChange"
+    >
+    </el-switch>
+    <a :download="this.$route.params.jobName + '.' + this.$route.query.version + '.txt'" :href="'api/jobs/' + this.$route.params.jobName + '/log/' + this.$route.query.version">
       <el-button type='text'>Download</el-button>
     </a>
-    <pre class="ktq-log-text" v-bind:class="{'ktq-log-wrap': lineWrap}">{{logText}}</pre>
+    <pre class="ktq-log-text" v-bind:class="{'ktq-log-wrap': lineWrap}">{{logText}}<span class="new-log-text">{{newLogText}}</span></pre>
   </div>
 </template>
 <script>
@@ -26,9 +36,12 @@ export default {
   data: function () {
     return {
       logText: '',
+      newLogText: '',
       selectedVersion: null,
       versions: [],
-      lineWrap: false
+      lineWrap: false,
+      wscon: null,
+      follow: false
     }
   },
   mounted: function () {
@@ -45,6 +58,7 @@ export default {
       })
       this.$http.get('/api/jobs/' + jobName + '/log/' + version).then(function (resource) {
         this.logText = resource.body
+        this.newLogText = ''
         loading.close()
       }).catch(function (response) {
         this.$message.error('Unable to load Log!\n')
@@ -75,7 +89,59 @@ export default {
     },
     versionChange: function (version) {
       this.$router.replace({ query: { version: version }})
-      this.loadJobLog(this.$route.params.jobName, version)
+      if (version === 'current') {
+        this.follow = true
+        this.startWebSocketFollow(this.$route.params.jobName)
+      } else {
+        this.stopWebSocketFollow()
+        this.loadJobLog(this.$route.params.jobName, version)
+      }
+    },
+    followChange: function (follow) {
+      if (follow) {
+        this.startWebSocketFollow(this.$route.params.jobName)
+      } else {
+        this.stopWebSocketFollow()
+        this.loadJobLog(this.$route.params.jobName, this.selectedVersion)
+      }
+    },
+    startWebSocketFollow: function (jobName) {
+      this.stopWebSocketFollow()
+      // eslint-disable-next-line
+      var con = new WebSocket('ws://' + window.location.host + '/wsapi/jobs/' + jobName + '/log' + '?tailLines=1000')
+      con.onmessage = event => {
+        this.logText += this.newLogText
+        this.newLogText = event.data
+        var body = window.document.body
+        body.scrollTop = body.scrollHeight
+      }
+      var onerror = error => {
+        this.$notify({
+          title: 'Stop follow',
+          message: 'Log follow is stopped',
+          duration: 0,
+          type: 'error'
+        })
+        console.error(error)
+        this.wscon = null
+      }
+      con.onerror = onerror
+      con.onclose = (event) => {
+        console.log(event)
+        if (event.code > 1000) {
+          onerror(event)
+        }
+      }
+      this.wscon = con
+      this.logText = ''
+      this.newLogText = ''
+      this.wsclosing = false
+    },
+    stopWebSocketFollow () {
+      if (this.wscon) {
+        this.wscon.close(1000)
+        this.wscon = null
+      }
     }
   }
 }
@@ -83,5 +149,13 @@ export default {
 <style lang="scss">
 .ktq-log-wrap {
   white-space: pre-wrap;
+}
+.new-log-text {
+  background-color: #D3DCE6;
+}
+.follow-switch {
+  position: fixed;
+  top: 100px;
+  right: 60px;
 }
 </style>

@@ -357,14 +357,16 @@ class JobLogHandler(BaseHandler):
         if len(pods['items']):
             params = {}
             follow = self.get_argument('follow', None) == 'true'
+            timeout = 60
             if follow:
                 params['follow'] = 'true'
                 params['tailLines'] = self.get_argument('tailLines', '10')
+                timeout = 0  # disable timeout checks
             pod_name = pods['items'][0]['metadata']['name']
             resp = await self.k8s_client.call_api_raw(
                 method='GET',
                 api='/api/v1/namespaces/{namespace}/pods/{pod_name}/log'.format(namespace=settings.job_namespace, pod_name=pod_name),
-                params=params,
+                params=params, timeout=timeout
             )
             if resp.status == 200:
                 try:

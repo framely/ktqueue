@@ -138,5 +138,6 @@ async def watch_pod(k8s_client):
         api='/api/v1/watch/namespaces/{namespace}/pods'.format(namespace=settings.job_namespace),
         method='GET',
         callback=callback,
-        params={'labelSelector': 'ktqueue-watching!=false'}
+        params={'labelSelector': 'ktqueue-watching!=false'},
+        timeout=0,
     )

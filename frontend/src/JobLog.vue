@@ -47,6 +47,9 @@ export default {
   mounted: function () {
     this.loadJobLogVersions(this.$route.params.jobName)
   },
+  beforeDestroy () {
+    this.stopWebSocketFollow()
+  },
   methods: {
     loadJobLog: function (jobName, version) {
       if (version === null) {
@@ -127,7 +130,6 @@ export default {
       }
       con.onerror = onerror
       con.onclose = (event) => {
-        console.log(event)
         if (event.code > 1000) {
           onerror(event)
         }

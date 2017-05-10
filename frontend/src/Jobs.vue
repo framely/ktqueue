@@ -395,7 +395,7 @@ export default {
       })
     },
     jobsFilterChange: function (filter) {
-      if (filter.constructor.name === 'Array') { // which mean table.filter-change call this function
+      if (filter.user !== undefined) { // which mean table.filter-change call this function
         if (filter.user.length) {
           this.jobsFilterUser = filter.user[0]
         } else {

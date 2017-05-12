@@ -120,8 +120,8 @@ export default {
       }
       var onerror = error => {
         this.$notify({
-          title: 'Stop follow',
-          message: 'Log follow is stopped',
+          title: 'Log follow is stopped',
+          message: 'Please refresh this page.',
           duration: 0,
           type: 'error'
         })

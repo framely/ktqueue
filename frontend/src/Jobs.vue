@@ -287,7 +287,7 @@ export default {
     stopBoard: function (index, tableData) {
       this.checkAuth()
       var line = tableData[index]
-      this.$http.delete('/job/tensorboard/' + line.name).then(() => {
+      this.$http.delete('/api/job/tensorboard/' + line.name).then(() => {
         this.loadJobs(this.jobsData.page)
         this.$message({
           type: 'info',

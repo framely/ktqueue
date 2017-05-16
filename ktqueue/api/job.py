@@ -63,12 +63,7 @@ def generate_job(name, command, node, gpu_num, image, repo, branch, commit_id, c
         })
 
     # cephfs
-    volumes.append({
-        'name': 'cephfs',
-        'hostPath': {
-            'path': '/mnt/cephfs'
-        }
-    })
+    volumes.append(settings.sfs_volume)
     volumeMounts.append({
         'name': 'cephfs',
         'mountPath': '/cephfs',

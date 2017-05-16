@@ -7,3 +7,21 @@ oauth2_provider = os.environ.get('KTQ_OAUTH2_PROVIDER', 'github')
 oauth2_clinet_id = os.environ.get('KTQ_OAUTH2_CLIENT_ID', '')
 oauth2_client_secret = os.environ.get('KTQ_OAUTH2_CLIENT_SECRET', '')
 oauth2_callback = os.environ.get('KTQ_OAUTH2_CALLBACK', None)
+sfs_type = os.environ.get('KTQ_SHAREFS_TYPE', 'hostPath')
+sfs_volume = {}
+if sfs_type == 'hostPath':
+    sfs_volume = {
+        'name': 'cephfs',
+        'hostPath': {
+            'path': '/mnt/cephfs'
+        }
+    }
+elif sfs_type == 'azure_file':
+    sfs_volume = {
+        'name': 'cephfs',
+        'azureFile': {
+            'secretName': os.environ.get('KTQ_SHAREFS_AZURE_FILE_SECREAT_NAME'),
+            'shareName': os.environ.get('KTQ_SHAREFS_AZURE_FILE_SHARE_NAME'),
+            'readOnly': False,
+        }
+    }

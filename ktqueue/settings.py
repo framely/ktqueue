@@ -13,7 +13,7 @@ if sfs_type == 'hostPath':
     sfs_volume = {
         'name': 'cephfs',
         'hostPath': {
-            'path': '/mnt/cephfs'
+            'path': os.environ.get('KTQ_SHAREFS_HOSTPATH', '/mnt/cephfs')
         }
     }
 elif sfs_type == 'azure_file':

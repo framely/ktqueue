@@ -322,7 +322,7 @@ class JobLogVersionHandler(tornado.web.RequestHandler):
             api='/api/v1/namespaces/{namespace}/pods'.format(namespace=settings.job_namespace),
             params={'labelSelector': 'job-name={job}'.format(job=job)}
         )
-        if len(pods['items']):
+        if 'items' in pods and len(pods['items']):
             versions = ['current'] + versions
         self.write({
             'job': job,
@@ -345,7 +345,7 @@ class JobLogHandler(BaseHandler):
             api='/api/v1/namespaces/{namespace}/pods'.format(namespace=settings.job_namespace),
             params={'labelSelector': 'job-name={job}'.format(job=job)}
         )
-        if len(pods['items']):
+        if 'items' in pods and len(pods['items']):
             params = {}
             timeout = 60
             if self.follow:

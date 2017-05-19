@@ -50,7 +50,7 @@ async def k8s_delete_job(k8s_client, job, pod_name=None, save_log=True):
             api='/api/v1/namespaces/{namespace}/pods'.format(namespace=settings.job_namespace),
             params={'labelSelector': 'job-name={job}'.format(job=job)}
         )
-        if 'items' in pods and len(pods['items']):
+        if pods.get('items', None):
             pod_name = pods['items'][0]['metadata']['name']
         else:
             return

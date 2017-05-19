@@ -322,7 +322,7 @@ class JobLogVersionHandler(tornado.web.RequestHandler):
             api='/api/v1/namespaces/{namespace}/pods'.format(namespace=settings.job_namespace),
             params={'labelSelector': 'job-name={job}'.format(job=job)}
         )
-        if 'items' in pods and len(pods['items']):
+        if pods.get('items', None):
             versions = ['current'] + versions
         self.write({
             'job': job,
@@ -345,7 +345,7 @@ class JobLogHandler(BaseHandler):
             api='/api/v1/namespaces/{namespace}/pods'.format(namespace=settings.job_namespace),
             params={'labelSelector': 'job-name={job}'.format(job=job)}
         )
-        if 'items' in pods and len(pods['items']):
+        if pods.get('items', None):
             params = {}
             timeout = 60
             if self.follow:
@@ -526,7 +526,7 @@ class TensorBoardHandler(BaseHandler):
             api='/api/v1/namespaces/{namespace}/pods'.format(namespace=settings.job_namespace),
             params={'labelSelector': 'ktqueue-tensorboard-job-name={job}'.format(job=job)}
         )
-        if len(pods['items']):
+        if pods.get('items', None):
             pod_name = pods['items'][0]['metadata']['name']
             ret = await self.k8s_client.call_api(
                 api='/api/v1/namespaces/{namespace}/pods/{name}'.format(namespace=settings.job_namespace, name=pod_name),

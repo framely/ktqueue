@@ -65,7 +65,7 @@ module.exports = {
       '/api': {
         target: 'http://localhost:8080'
       },
-      '/oauth2': {
+      '/auth': {
         target: 'http://localhost:8080'
       },
       '/wsapi': {

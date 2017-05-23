@@ -66,8 +66,8 @@ def get_app():
         (r'/dist/(.*)', tornado.web.StaticFileHandler, {'path': __dist_path}),
         (r'/tensorboard/(?P<job>[\w_\-\.]+)/(?P<url>.*)', TensorBoardProxyHandler, {'client': SimpleAsyncHTTPClient(max_clients=64)}),
         (r'/data/(?P<url>.*)', TensorBoardProxyHandler, {'client': SimpleAsyncHTTPClient(max_clients=64)}),  # This is a hack for TensorBoard
-        (r'/oauth2/start', OAuth2Handler, {'mongo_client': mongo_client}),
-        (r'/oauth2/callback', OAuth2Handler, {'mongo_client': mongo_client}),
+        (r'/auth/oauth2/start', OAuth2Handler, {'mongo_client': mongo_client}),
+        (r'/auth/oauth2/callback', OAuth2Handler, {'mongo_client': mongo_client}),
         # APIS
         (r'/api/nodes', NodesHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),
         (r'/api/jobs', JobsHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),

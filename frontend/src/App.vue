@@ -10,7 +10,7 @@
       <template slot="title">{{currentUser}}</template>
       <el-menu-item index="logout" :route="{}" @click="logout">Logout</el-menu-item>
     </el-submenu>
-    <el-menu-item v-else index="login" :route="{}"><a href="/oauth2/start">Login</a></el-menu-item>
+    <el-menu-item v-else index="login" :route="{}"><a href="/auth/oauth2/start">Login</a></el-menu-item>
   </el-menu>
   <router-view :check-auth="checkAuth" :current-user="currentUser"></router-view>
 </div>
@@ -38,7 +38,7 @@ export default {
     },
     checkAuth: function () {
       if (this.currentUser === null && this.auth_required) {
-        window.location = 'oauth2/start'
+        window.location = 'auth/oauth2/start'
         return false
       }
       return true

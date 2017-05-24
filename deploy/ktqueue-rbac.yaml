@@ -25,3 +25,15 @@ rules:
     resources:
       - jobs
     verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: ktqueue
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ktqueue
+subjects:
+- kind: ServiceAccount
+  name: ktqueue

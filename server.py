@@ -27,6 +27,7 @@ from ktqueue.api import TensorBoardProxyHandler
 from ktqueue.api import TensorBoardHandler
 from ktqueue.api import OAuth2Handler
 from ktqueue.api import CurrentUserHandler
+from ktqueue.api import AuthRequestHandler
 
 
 from ktqueue.event_watcher import watch_pod
@@ -68,6 +69,7 @@ def get_app():
         (r'/data/(?P<url>.*)', TensorBoardProxyHandler, {'client': SimpleAsyncHTTPClient(max_clients=64)}),  # This is a hack for TensorBoard
         (r'/auth/oauth2/start', OAuth2Handler, {'mongo_client': mongo_client}),
         (r'/auth/oauth2/callback', OAuth2Handler, {'mongo_client': mongo_client}),
+        (r'/auth/auth', AuthRequestHandler),
         # APIS
         (r'/api/nodes', NodesHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),
         (r'/api/jobs', JobsHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),

@@ -75,7 +75,8 @@
       </el-table-column>
       <el-table-column
         label="Node"
-        width="100">
+        width="100"
+        :show-overflow-tooltip="true">
         <template scope="scope">
           {{ scope.row.runningNode || '' }}
         </template>

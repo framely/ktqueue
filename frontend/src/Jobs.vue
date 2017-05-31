@@ -442,7 +442,7 @@ export default {
 }
 .job-expand-item {
   margin-bottom: 10px;
-  overflow: auto;
+  overflow: hidden;
   zoom: 1;
   > div {
     margin-left: 100px;

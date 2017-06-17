@@ -274,8 +274,11 @@ class JobsHandler(BaseHandler):
 
         # status; Running etc.
         if status:
-            query['status'] = status
-
+            if status == '$RunningExtra':
+                query.pop('hide', None)
+                query['status'] = {'$nin': ['Completed', 'ManualStop', 'FetchError']}
+            else:
+                query['status'] = status
         # user
         if user:
             query['user'] = {'$in': user}
@@ -283,7 +286,10 @@ class JobsHandler(BaseHandler):
         # node
         if node:
             query['node'] = {'$in': node}
-        print(query)
+
+        if status == '$RunningExtra':
+            query = {'$or': [query, {'tensorboard': True}]}
+
         count = self.jobs_collection.count(query)
         jobs = list(self.jobs_collection.find(query).sort("_id", -1).skip(page_size * (page - 1)).limit(page_size))
         for job in jobs:
@@ -388,7 +394,6 @@ class JobLogHandler(BaseHandler):
                 resp.close()
 
     def on_connection_close(self):
-        print('on_connection_close')
         self.closed = True
 
 
@@ -396,7 +401,6 @@ class JobLogWSHandler(tornado.websocket.WebSocketHandler, JobLogHandler):
 
     def initialize(self, *args, **kwargs):
         JobLogHandler.initialize(self, *args, **kwargs)
-        print('initialize')
 
     def check_origin(self, origin):
         return True

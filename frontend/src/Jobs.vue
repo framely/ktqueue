@@ -299,6 +299,10 @@ export default {
           type: 'info',
           message: 'TensorBoard stopped.'
         })
+      }).catch((response) => {
+        this.loadJobs(this.jobsData.page)
+        this.$message.error(response.body)
+        console.error(response.body)
       })
     },
     pageCurrentChange: function (page) {
@@ -321,7 +325,7 @@ export default {
       } else if (this.jobsFilter === 'Fav') {
         params['fav'] = '1'
       } else if (this.jobsFilter === 'Running') {
-        params['status'] = 'Running'
+        params['status'] = '$RunningExtra' // include all non-stop pod, like crashbackoff, pending
         params['hide'] = 'all'
       }
       if (this.jobsFilterUser) {

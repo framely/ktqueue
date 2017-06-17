@@ -73,16 +73,16 @@ def get_app():
         # APIS
         (r'/api/nodes', NodesHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),
         (r'/api/jobs', JobsHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),
-        (r'/api/jobs/(?P<job>[\w_-]+)/log', JobLogHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),
-        (r'/api/jobs/(?P<job>[\w_-]+)/log/(?P<version>\d+|current)', JobLogHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),
-        (r'/api/jobs/(?P<job>[\w_-]+)/log/version', JobLogVersionHandler, {'k8s_client': k8s_client}),
+        (r'/api/jobs/(?P<job>[\.\w_-]+)/log', JobLogHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),
+        (r'/api/jobs/(?P<job>[\.\w_-]+)/log/(?P<version>\d+|current)', JobLogHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),
+        (r'/api/jobs/(?P<job>[\.\w_-]+)/log/version', JobLogVersionHandler, {'k8s_client': k8s_client}),
         (r'/api/job/stop/(?P<job>[\w_\-\.]+)', StopJobHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),
         (r'/api/job/restart/(?P<job>[\w_\-\.]+)', RestartJobHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),
         (r'/api/job/tensorboard/(?P<job>[\w_\-\.]+)', TensorBoardHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),
         (r'/api/repos', ReposHandler, {'mongo_client': mongo_client}),
         (r'/api/repos/(?P<id>[0-9a-f]+)', RepoHandler, {'mongo_client': mongo_client}),
         (r'/api/current_user', CurrentUserHandler),
-        (r'/wsapi/jobs/(?P<job>[\w_-]+)/log', JobLogWSHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),
+        (r'/wsapi/jobs/(?P<job>[\.\w_-]+)/log', JobLogWSHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),
 
 
 

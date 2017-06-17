@@ -253,7 +253,8 @@ class JobsHandler(BaseHandler):
         fav = self.get_argument('fav', None)
         status = self.get_argument('status', None)
         tags = self.get_arguments('tag')
-        user = self.get_argument('user', None)
+        user = self.get_arguments('user[]')
+        node = self.get_arguments('node[]')
 
         query = {}
 
@@ -277,8 +278,12 @@ class JobsHandler(BaseHandler):
 
         # user
         if user:
-            query['user'] = user
+            query['user'] = {'$in': user}
 
+        # node
+        if node:
+            query['node'] = {'$in': node}
+        print(query)
         count = self.jobs_collection.count(query)
         jobs = list(self.jobs_collection.find(query).sort("_id", -1).skip(page_size * (page - 1)).limit(page_size))
         for job in jobs:

@@ -49,7 +49,7 @@
                :width="70"
                on-text="Hide"
                off-text="Show"
-               :disabled="scope.row.status == 'Running'"
+               :disabled="scope.row.status != 'Completed' && scope.row.status != 'ManualStop'"
                @change="jobHideChange(scope.row, $event)">
               </el-switch>
            </div>
@@ -76,6 +76,9 @@
       <el-table-column
         label="Node"
         width="100"
+        prop="runningNode"
+        :filters="filterNodes"
+        columnKey="node"
         :show-overflow-tooltip="true">
         <template scope="scope">
           {{ scope.row.runningNode || '' }}
@@ -147,13 +150,15 @@ export default {
       jobsFilter: 'All',
       page: 1,
       pageSize: 20,
-      user: null
+      user: null,
+      node: null
     }
     return {
       loading: null,
       defaultFilter: defaultFilter,
       jobsFilter: this.$route.query.jobsFilter || defaultFilter.jobsFilter,
       jobsFilterUser: this.$route.query.user || defaultFilter.jobsFilterUser,
+      jobsFilterNode: this.$route.query.node || defaultFilter.jobsFilterNode,
       // pageSizeToGo: dealing with element-ui issue,
       // when you choose a large `pageSize`, which makes your current `page`,
       // element-ui will call not only `size-change` but also `current-change`
@@ -322,10 +327,14 @@ export default {
       if (this.jobsFilterUser) {
         params['user'] = this.jobsFilterUser
       }
+      if (this.jobsFilterNode) {
+        params['node'] = this.jobsFilterNode
+      }
       params['pageSize'] = pageSize
       var routerQuery = {
         jobsFilter: this.jobsFilter,
         user: this.jobsFilterUser,
+        node: this.jobsFilterNode,
         page: page,
         pageSize: pageSize
       }
@@ -396,11 +405,19 @@ export default {
       })
     },
     jobsFilterChange: function (filter) {
+      console.log(filter)
       if (filter.user !== undefined) { // which mean table.filter-change call this function
         if (filter.user.length) {
-          this.jobsFilterUser = filter.user[0]
+          this.jobsFilterUser = filter.user
         } else {
           this.jobsFilterUser = null
+        }
+      }
+      if (filter.node !== undefined) {
+        if (filter.node.length) {
+          this.jobsFilterNode = filter.node
+        } else {
+          this.jobsFilterNode = null
         }
       }
       this.loadJobs(this.jobsData.page)
@@ -419,6 +436,13 @@ export default {
         users.push({ text: this.currentUser, value: this.currentUser })
       }
       return users
+    },
+    filterNodes: function () {
+      var nodes = []
+      for (const node of this.nodes) {
+        nodes.push({ text: node.name, value: node.name })
+      }
+      return nodes
     }
   }
 }

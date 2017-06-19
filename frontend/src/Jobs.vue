@@ -49,7 +49,7 @@
                :width="70"
                on-text="Hide"
                off-text="Show"
-               :disabled="scope.row.status != 'Completed' && scope.row.status != 'ManualStop'"
+               :disabled="scope.row.status != 'Completed' && scope.row.status != 'ManualStop' && scope.row.status != 'FetchError'"
                @change="jobHideChange(scope.row, $event)">
               </el-switch>
            </div>
@@ -476,6 +476,7 @@ export default {
     margin-left: 100px;
     > pre{
       margin: 0;
+      white-space: pre-wrap;
     }
   }
   > label {

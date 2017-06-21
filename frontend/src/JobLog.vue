@@ -111,7 +111,8 @@ export default {
     startWebSocketFollow: function (jobName) {
       this.stopWebSocketFollow()
       // eslint-disable-next-line
-      var con = new WebSocket('ws://' + window.location.host + '/wsapi/jobs/' + jobName + '/log' + '?tailLines=1000')
+      let schema = window.location.protocol.startsWith('https') ? 'wss://' : 'ws://'
+      var con = new WebSocket(schema + window.location.host + '/wsapi/jobs/' + jobName + '/log' + '?tailLines=1000')
       con.onmessage = event => {
         this.logText += this.newLogText
         this.newLogText = event.data

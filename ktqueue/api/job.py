@@ -462,6 +462,11 @@ class RestartJobHandler(BaseHandler):
             mounts=job['volumeMounts']
         )
 
+        if job['status'] == 'FetchError':
+            self.jobs_collection.update_one({'name': job}, {'$set': {'status': 'fetching'}})
+        
+        self.finish({'message': 'job {} successful restarted.'.format(job['name'])})
+
         # Refetch
         if job['status'] == 'FetchError':
             await clone_code(
@@ -476,7 +481,7 @@ class RestartJobHandler(BaseHandler):
             method='POST',
             data=job_description
         )
-        self.finish({'message': 'job {} successful restarted.'.format(job['name'])})
+
 
 
 class TensorBoardHandler(BaseHandler):

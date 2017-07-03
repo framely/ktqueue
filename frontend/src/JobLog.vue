@@ -115,6 +115,11 @@ export default {
       var con = new WebSocket(schema + window.location.host + '/wsapi/jobs/' + jobName + '/log' + '?tailLines=1000')
       con.onmessage = event => {
         this.logText += this.newLogText
+        let pos = this.logText.length
+        for (let i = 0; i < 1000; i++) {
+          pos = this.logText.lastIndexOf('\n', pos - 1)
+        }
+        this.logText = this.logText.slice(pos + 1)
         this.newLogText = event.data
         var body = window.document.body
         body.scrollTop = body.scrollHeight

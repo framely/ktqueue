@@ -153,14 +153,20 @@ export default {
       user: null,
       node: null
     }
-    return {
+    var ensureArray = (raw) => {
+      if (raw) {
+        return Array.isArray(raw) ? raw : [raw]
+      }
+      return raw
+    }
+    const data = {
       loading: null,
       defaultFilter: defaultFilter,
       jobsFilter: this.$route.query.jobsFilter || defaultFilter.jobsFilter,
-      jobsFilterUser: this.$route.query.user || defaultFilter.jobsFilterUser,
-      jobsFilterNode: this.$route.query.node || defaultFilter.jobsFilterNode,
+      jobsFilterUser: ensureArray(this.$route.query.user) || defaultFilter.jobsFilterUser,
+      jobsFilterNode: ensureArray(this.$route.query.node) || defaultFilter.jobsFilterNode,
       // pageSizeToGo: dealing with element-ui issue,
-      // when you choose a large `pageSize`, which makes your current `page`,
+      // when you choose a large `pageSize`, which may change your current `page`,
       // element-ui will call not only `size-change` but also `current-change`
       // we use pageSizeToGo to eliminate incorrect `current-change` call
       pageSizeToGo: parseInt(this.$route.query.pageSize || defaultFilter.pageSize),
@@ -180,6 +186,7 @@ export default {
       repos: [],
       nodes: []
     }
+    return data
   },
   mounted: function () {
     this.loadJobs(this.jobsData.page, this.jobsData.pageSize)

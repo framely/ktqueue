@@ -377,7 +377,7 @@ class JobLogHandler(BaseHandler):
     @convert_asyncio_task
     async def get(self, job, version=None):
         if version and version != 'current':
-            with open(os.path.join('/cephfs/ktqueue/logs', job, 'log.{version}.txt'.format(version=version)), 'r') as f:
+            with open(os.path.join('/cephfs/ktqueue/logs', job, 'log.{version}.txt'.format(version=version)), 'rb') as f:
                 self.finish(f.read())
             return
         self.follow = self.get_argument('follow', None) == 'true'
@@ -464,7 +464,7 @@ class RestartJobHandler(BaseHandler):
 
         if job['status'] == 'FetchError':
             self.jobs_collection.update_one({'name': job}, {'$set': {'status': 'fetching'}})
-        
+
         self.finish({'message': 'job {} successful restarted.'.format(job['name'])})
 
         # Refetch

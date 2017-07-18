@@ -71,6 +71,7 @@ async def watch_pod(k8s_client):
         if 'job-name' not in labels:
             return
         job_name = labels['job-name']
+
         job_exist = jobs_collection.find_one({'name': job_name})
         if not job_exist:
             return
@@ -92,6 +93,21 @@ async def watch_pod(k8s_client):
         else:
             status_str = '{}: {}'.format(event['object']['status']['phase'], event['object']['status']['reason'])
 
+        pod_name = event['object']['metadata']['name']
+
+        # update Running Node & used GPU
+        if status[0] == 'terminated':
+            node_used_gpus[event['object']['spec']['nodeName']].pop(pod_name, None)
+        elif status[0] == 'waiting':  # waiting doesn't use GPU
+            pass
+        elif event['object']['spec'].get('nodeName', None):
+            job_update['runningNode'] = event['object']['spec']['nodeName']
+            node_used_gpus[event['object']['spec']['nodeName']][pod_name] = int(job_exist['gpu_num'])
+
+        # Job is being terminated should not affect job status
+        if labels.get('ktqueue-terminating', None) == 'true':
+            return
+
         logging.info('Job {} enter state {}'.format(job_name, status_str))
 
         # update status
@@ -102,22 +118,10 @@ async def watch_pod(k8s_client):
         else:
             job_update['status'] = status_str
 
-        # update Running Node & used GPU
-        if status[0] == 'terminated':
-            node_used_gpus[event['object']['spec']['nodeName']].pop(job_name, None)
-        elif status[0] == 'waiting':  # waiting doesn't use GPU
-            pass
-        elif event['object']['spec'].get('nodeName', None):
-            job_update['runningNode'] = event['object']['spec']['nodeName']
-            node_used_gpus[event['object']['spec']['nodeName']][job_name] = int(job_exist['gpu_num'])
-
-        if job_exist['status'] != 'ManualStop':
-            jobs_collection.update_one({'name': job_name}, {'$set': job_update})
+        jobs_collection.update_one({'name': job_name}, {'$set': job_update})
 
         # When a job is successful finished, save log and do not watch it any more
         if status[0] == 'terminated':
-            pod_name = event['object']['metadata']['name']
-
             # save log first
             await save_job_log(job_name=job_name, pod_name=pod_name, k8s_client=k8s_client)
 

@@ -59,6 +59,13 @@ async def k8s_delete_job(k8s_client, job, pod_name=None, save_log=True):
         await save_job_log(job_name=job, pod_name=pod_name, k8s_client=k8s_client)
 
     await k8s_client.call_api(
+        api='/api/v1/namespaces/{namespace}/pods/{name}'.format(namespace=settings.job_namespace, name=pod_name),
+        method='PATCH',
+        headers={'Content-Type': 'application/json-patch+json'},
+        data=[{"op": "add", "path": "/metadata/labels/ktqueue-terminating", "value": "true"}]
+    )
+
+    await k8s_client.call_api(
         method='DELETE',
         api='/apis/batch/v1/namespaces/{namespace}/jobs/{name}'.format(namespace=settings.job_namespace, name=job)
     )

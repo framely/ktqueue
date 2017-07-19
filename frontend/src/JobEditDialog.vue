@@ -1,5 +1,5 @@
 <template>
-<el-dialog :title="title" :value="show" @close="() => this.$emit('cancel')" size="large">
+<el-dialog :title="title" :visible.sync="show" @close="() => this.$emit('cancel')" size="large">
   <el-form ref="form" :model="internalData" label-width="95px" >
     <el-form-item label="Name" required>
       <el-input v-model="internalData.name" :disabled="disabledFields.name"></el-input>

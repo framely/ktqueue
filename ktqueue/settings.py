@@ -25,3 +25,12 @@ elif sfs_type == 'azure_file':
             'readOnly': False,
         }
     }
+elif sfs_type == 'nfs':
+    sfs_volume = {
+        'name': 'cephfs',
+        'nfs': {
+            'server': os.environ.get('KTQ_SHAREFS_NFS_SERVER'),
+            'path': os.environ.get('KTQ_SHAREFS_NFS_PATH', '/'),
+            'readOnly': False,
+        }
+    }

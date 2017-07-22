@@ -39,7 +39,7 @@ __dist_path = os.path.join(__frontend_path, 'dist')
 
 
 def create_db_index():
-    client = pymongo.MongoClient('ktqueue-mongodb')
+    client = pymongo.MongoClient(ktqueue.settings.mongodb_server)
     client.ktqueue.jobs.create_index([("name", pymongo.ASCENDING)], unique=True)
     client.ktqueue.jobs.create_index([("hide", pymongo.ASCENDING)])
     client.ktqueue.jobs.create_index([("status", pymongo.ASCENDING)])
@@ -51,7 +51,7 @@ def create_db_index():
 
 def get_app():
     k8s_client = kubernetes_client()
-    mongo_client = pymongo.MongoClient('ktqueue-mongodb')
+    mongo_client = pymongo.MongoClient(ktqueue.settings.mongodb_server)
 
     # other args to app
     app_kwargs = {}
@@ -83,9 +83,6 @@ def get_app():
         (r'/api/repos/(?P<id>[0-9a-f]+)', RepoHandler, {'mongo_client': mongo_client}),
         (r'/api/current_user', CurrentUserHandler),
         (r'/wsapi/jobs/(?P<job>[\.\w_-]+)/log', JobLogWSHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),
-
-
-
     ], **app_kwargs)
     return application
 

@@ -31,7 +31,7 @@ export default {
   },
   methods: {
     loadCurrentUser: function () {
-      this.$http.get('/api/current_user').then(function (resource) {
+      this.$http.get('./api/current_user').then(function (resource) {
         this.currentUser = resource.body.user
         this.authRequired = resource.body.authRequired
       })
@@ -44,7 +44,7 @@ export default {
       return true
     },
     logout () {
-      this.$http.delete('/api/current_user').then(resource => {
+      this.$http.delete('./api/current_user').then(resource => {
         this.currentUser = null
         this.$message.success('Successful logout')
       }).catch(resource => {

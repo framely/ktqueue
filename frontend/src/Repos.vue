@@ -82,7 +82,7 @@ export default {
   methods: {
     loadRepos: function (page) {
       this.reposData.loading = true
-      this.$http.get('/api/repos?page=' + page).then(function (resource) {
+      this.$http.get('./api/repos?page=' + page).then(function (resource) {
         resource.body.loading = false
         this.reposData = resource.body
       })
@@ -100,7 +100,7 @@ export default {
             sshKey: this.createRepoDialog.sshKey
           }
       }
-      this.$http.post('/api/repos', this.createRepoDialog.data).then(function (resource) {
+      this.$http.post('./api/repos', this.createRepoDialog.data).then(function (resource) {
         this.loadRepos(1)
         this.createRepoDialog.visible = false
       })

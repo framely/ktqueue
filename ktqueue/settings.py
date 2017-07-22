@@ -1,5 +1,6 @@
 import os
 
+mongodb_server = os.environ.get('KTQ_MONGODB_SERVER', 'ktqueue-mongodb')
 job_namespace = os.environ.get('KTQ_JOB_NAMESPACE', 'ktqueue')
 auth_required = True if os.environ.get('KTQ_AUTH_REQUIRED', '0') == '1' else False
 cookie_secret = os.environ.get('KTQ_COOKIE_SECRET', '')

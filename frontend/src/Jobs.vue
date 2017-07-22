@@ -190,12 +190,12 @@ export default {
   },
   mounted: function () {
     this.loadJobs(this.jobsData.page, this.jobsData.pageSize)
-    this.$http.get('/api/repos?pageSize=0&repo_only=1').then((resource) => {
+    this.$http.get('./api/repos?pageSize=0&repo_only=1').then((resource) => {
       for (var i = 0; i < resource.body.data.length; i++) {
         this.repos.push({ 'value': resource.body.data[i].repo })
       }
     })
-    this.$http.get('/api/nodes').then((resource) => {
+    this.$http.get('./api/nodes').then((resource) => {
       this.nodes = resource.body.items
     })
   },
@@ -245,7 +245,7 @@ export default {
         cancelButtonText: 'Cancel',
         type: 'warning'
       }).then(() => {
-        this.$http.post('/api/job/stop/' + jobName, {}).then((resource) => {
+        this.$http.post('./api/job/stop/' + jobName, {}).then((resource) => {
           this.$message({
             type: 'success',
             message: jobName + ' stopped!'
@@ -268,7 +268,7 @@ export default {
         cancelButtonText: 'Cancel',
         type: 'warning'
       }).then(() => {
-        this.$http.post('/api/job/restart/' + jobName, {}).then((resource) => {
+        this.$http.post('./api/job/restart/' + jobName, {}).then((resource) => {
           this.$message({
             type: 'success',
             message: jobName + ' Restarted!'
@@ -290,7 +290,7 @@ export default {
         confirmButtonText: 'Confirm',
         cancelButtonText: 'Cancel'
       }).then((data) => {
-        this.$http.post('/api/job/tensorboard/' + line.name, { 'logdir': data.value }).then(() => {
+        this.$http.post('./api/job/tensorboard/' + line.name, { 'logdir': data.value }).then(() => {
           this.loadJobs(this.jobsData.page)
         })
       }).catch(() => {
@@ -300,7 +300,7 @@ export default {
     stopBoard: function (index, tableData) {
       this.checkAuth()
       var line = tableData[index]
-      this.$http.delete('/api/job/tensorboard/' + line.name).then(() => {
+      this.$http.delete('./api/job/tensorboard/' + line.name).then(() => {
         this.loadJobs(this.jobsData.page)
         this.$message({
           type: 'info',
@@ -355,7 +355,7 @@ export default {
         }
       }
       this.$router.push({ query: routerQuery })
-      this.$http.get('/api/jobs', { params: params }).then((resource) => {
+      this.$http.get('./api/jobs', { params: params }).then((resource) => {
         if (this.loading) {
           this.loading.close()
         }
@@ -373,7 +373,7 @@ export default {
             updateBody[field] = job[field]
           }
         }
-        this.$http.put('/api/jobs', updateBody).then(() => {
+        this.$http.put('./api/jobs', updateBody).then(() => {
           this.loadJobs(this.jobsData.page)
           this.editJobDialog.visible = false
         }).catch((response) => {
@@ -382,7 +382,7 @@ export default {
         })
         return
       }
-      this.$http.post('/api/jobs', job).then((resource) => {
+      this.$http.post('./api/jobs', job).then((resource) => {
         this.loadJobs(1)
         this.editJobDialog.visible = false
       }).catch((response) => {
@@ -391,7 +391,7 @@ export default {
       })
     },
     jobHideChange: function (line, event) {
-      this.$http.put('/api/jobs', {
+      this.$http.put('./api/jobs', {
         '_id': line._id,
         'hide': event
       }).then(() => {
@@ -407,7 +407,7 @@ export default {
         icon = icon.querySelector('i')
       }
       icon.className = 'el-icon-loading'
-      this.$http.put('/api/jobs', {
+      this.$http.put('./api/jobs', {
         '_id': line._id,
         'fav': !line.fav
       }).then(() => {

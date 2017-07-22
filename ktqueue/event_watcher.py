@@ -48,7 +48,7 @@ async def watch_pod(k8s_client):
     from .api.tensorboard_proxy import job_tensorboard_map
     from .api.node import node_used_gpus
 
-    mongo_client = pymongo.MongoClient('ktqueue-mongodb')
+    mongo_client = pymongo.MongoClient(settings.mongodb_server)
     jobs_collection = mongo_client.ktqueue.jobs
 
     async def callback(event):

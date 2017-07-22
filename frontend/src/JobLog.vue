@@ -59,7 +59,7 @@ export default {
         target: '.ktq-log-text',
         text: 'loading log'
       })
-      this.$http.get('/api/jobs/' + jobName + '/log/' + version).then(function (resource) {
+      this.$http.get('./api/jobs/' + jobName + '/log/' + version).then(function (resource) {
         this.logText = resource.body
         this.newLogText = ''
         loading.close()
@@ -70,7 +70,7 @@ export default {
       })
     },
     loadJobLogVersions: function (jobName) {
-      this.$http.get('/api/jobs/' + jobName + '/log/version').then(function (resource) {
+      this.$http.get('./api/jobs/' + jobName + '/log/version').then(function (resource) {
         this.versions = resource.body.versions
         if (this.versions.length === 0) {
           this.selectedVersion = null

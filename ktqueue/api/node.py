@@ -32,6 +32,6 @@ class NodesHandler(tornado.web.RequestHandler):
             'labels': node['metadata']['labels'],
             'gpu_used': used_gpus(node['metadata']['name']),
             'jobs': node_used_gpus[node['metadata']['name']],
-            'gpu_capacity': node['status']['capacity']['alpha.kubernetes.io/nvidia-gpu'],
+            'gpu_capacity': node['status']['capacity'].get('alpha.kubernetes.io/nvidia-gpu', 0),
         } for node in ret['items']
         ]})

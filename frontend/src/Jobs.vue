@@ -141,10 +141,6 @@ export default {
   components: {
     JobEditDialog
   },
-  props: {
-    checkAuth: Function,
-    currentUser: String
-  },
   data: function () {
     var defaultFilter = {
       jobsFilter: 'All',
@@ -202,14 +198,12 @@ export default {
   methods: {
     moment,
     showCreateJob: function () {
-      this.checkAuth()
       this.editJobDialog.title = 'Create job'
       this.editJobDialog.disabledFields = {}
       this.editJobDialog.type = 'create'
       this.editJobDialog.visible = true
     },
     showCloneJob: function (index, tableData) {
-      this.checkAuth()
       this.editJobDialog.title = 'Clone job'
       this.editJobDialog.disabledFields = {}
       this.editJobDialog.type = 'clone'
@@ -218,7 +212,6 @@ export default {
       this.editJobDialog.visible = true
     },
     showEditJob: function (index, tableData) {
-      this.checkAuth()
       this.editJobDialog.title = 'Edit job'
       this.editJobDialog.disabledFields = {
         name: true,
@@ -238,7 +231,6 @@ export default {
       this.editJobDialog.visible = true
     },
     stopJob: function (index, tableData) {
-      this.checkAuth()
       var jobName = tableData[index].name
       this.$confirm('Do you really want to stop ' + jobName + '?', 'Stop job', {
         confirmButtonText: 'Confirm',
@@ -261,7 +253,6 @@ export default {
       })
     },
     restartJob: function (index, tableData) {
-      this.checkAuth()
       var jobName = tableData[index].name
       this.$confirm('Do you really want to Restart ' + jobName + '?', 'Restart job', {
         confirmButtonText: 'Confirm',
@@ -284,7 +275,6 @@ export default {
       })
     },
     startBoard: function (index, tableData) {
-      this.checkAuth()
       var line = tableData[index]
       this.$prompt('Please enter logdir. You can use $JOB_NAME, $WORK_DIR, $OUTPUT_DIR', 'TensorBoard', {
         confirmButtonText: 'Confirm',
@@ -298,7 +288,6 @@ export default {
       })
     },
     stopBoard: function (index, tableData) {
-      this.checkAuth()
       var line = tableData[index]
       this.$http.delete('./api/job/tensorboard/' + line.name).then(() => {
         this.loadJobs(this.jobsData.page)
@@ -441,10 +430,10 @@ export default {
     }
   },
   computed: {
-    filterUsers: function () {
+    filterUsers () {
       var users = []
-      if (this.currentUser) {
-        users.push({ text: this.currentUser, value: this.currentUser })
+      if (this.$store.state.userInfo.username) {
+        users.push({ text: this.$store.state.userInfo.username, value: this.$store.state.userInfo.username })
       }
       return users
     },

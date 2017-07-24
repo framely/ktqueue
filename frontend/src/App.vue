@@ -6,49 +6,35 @@
     <h2 id="tq-title">KTQueue</h2>
     <el-menu-item index="/jobs" :route="{path: '/jobs'}">Jobs</el-menu-item>
     <el-menu-item index="/repos" :route="{path: '/repos'}">Repos</el-menu-item>
-    <el-submenu v-if="currentUser" index="currentUser">
-      <template slot="title">{{currentUser}}</template>
+    <el-submenu v-if="$store.state.userInfo.username" index="currentUser">
+      <template slot="title">{{$store.state.userInfo.username}}</template>
       <el-menu-item index="logout" :route="{}" @click="logout">Logout</el-menu-item>
     </el-submenu>
     <el-menu-item v-else index="login" :route="{}"><a href="/auth/oauth2/start">Login</a></el-menu-item>
   </el-menu>
-  <router-view :check-auth="checkAuth" :current-user="currentUser"></router-view>
+  <router-view></router-view>
 </div>
 </template>
 
 <script>
-
 export default {
   name: 'app',
   data () {
     return {
-      currentUser: null,
-      authRequired: false
     }
   },
-  mounted: function () {
-    this.loadCurrentUser()
+  mounted () {
   },
   methods: {
-    loadCurrentUser: function () {
-      this.$http.get('./api/current_user').then(function (resource) {
-        this.currentUser = resource.body.user
-        this.authRequired = resource.body.authRequired
-      })
-    },
-    checkAuth: function () {
-      if (this.currentUser === null && this.auth_required) {
-        window.location = 'auth/oauth2/start'
-        return false
-      }
-      return true
-    },
     logout () {
-      this.$http.delete('./api/current_user').then(resource => {
-        this.currentUser = null
+      this.$http.delete('./api/current_user', this.form).then((response) => {
+        this.$store.commit('updateUserInfo', { username: null })
+        delete window.localStorage['username']
         this.$message.success('Successful logout')
-      }).catch(resource => {
+        this.$router.replace('/login')
+      }).catch((response) => {
         this.$message.errr('Can not logout')
+        console.error(response.body)
       })
     }
   }

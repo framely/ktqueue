@@ -11,6 +11,7 @@ import tornado.websocket
 from ktqueue.cloner import Cloner
 from .utils import convert_asyncio_task
 from .utils import BaseHandler
+from .utils import apiauthenticated
 from ktqueue.utils import k8s_delete_job
 from ktqueue.utils import KTQueueDefaultCredentialProvider
 from ktqueue import settings
@@ -154,7 +155,7 @@ class JobsHandler(BaseHandler):
         self.jobs_collection = mongo_client.ktqueue.jobs
 
     @convert_asyncio_task
-    @tornado.web.authenticated
+    @apiauthenticated
     async def post(self):
         """
         Create a new job.
@@ -301,7 +302,7 @@ class JobsHandler(BaseHandler):
             'data': jobs,
         }))
 
-    @tornado.web.authenticated
+    @apiauthenticated
     async def put(self):
         """modify job.
             only part of fields can be modified.
@@ -435,7 +436,7 @@ class StopJobHandler(BaseHandler):
         self.jobs_collection = mongo_client.ktqueue.jobs
 
     @convert_asyncio_task
-    @tornado.web.authenticated
+    @apiauthenticated
     async def post(self, job):
         await k8s_delete_job(self.k8s_client, job)
         self.jobs_collection.update_one({'name': job}, {'$set': {'status': 'ManualStop'}})
@@ -450,7 +451,7 @@ class RestartJobHandler(BaseHandler):
         self.jobs_collection = mongo_client.ktqueue.jobs
 
     @convert_asyncio_task
-    @tornado.web.authenticated
+    @apiauthenticated
     async def post(self, job):
         await k8s_delete_job(self.k8s_client, job)
         job = self.jobs_collection.find_one({'name': job})
@@ -483,7 +484,6 @@ class RestartJobHandler(BaseHandler):
         )
 
 
-
 class TensorBoardHandler(BaseHandler):
 
     def initialize(self, k8s_client, mongo_client):
@@ -492,7 +492,7 @@ class TensorBoardHandler(BaseHandler):
         self.jobs_collection = mongo_client.ktqueue.jobs
 
     @convert_asyncio_task
-    @tornado.web.authenticated
+    @apiauthenticated
     async def post(self, job):
         body_arguments = json.loads(self.request.body.decode('utf-8'))
         logdir = body_arguments.get('logdir', '/cephfs/ktqueue/logs/{job}/train'.format(job=job))
@@ -533,7 +533,7 @@ class TensorBoardHandler(BaseHandler):
         self.write(ret)
 
     @convert_asyncio_task
-    @tornado.web.authenticated
+    @apiauthenticated
     async def delete(self, job):
         pods = await self.k8s_client.call_api(
             method='GET',

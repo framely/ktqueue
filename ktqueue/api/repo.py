@@ -7,6 +7,7 @@ import bson
 import tornado.web
 
 from .utils import BaseHandler
+from .utils import apiauthenticated
 
 
 class ReposHandler(BaseHandler):
@@ -18,7 +19,7 @@ class ReposHandler(BaseHandler):
         self.mongo_client = mongo_client
         self.repos_collection = self.mongo_client.ktqueue.repos
 
-    @tornado.web.authenticated
+    @apiauthenticated
     async def post(self):
         """create a credential for repo, support both ssh & https.
             ssh e.x.:
@@ -78,7 +79,7 @@ class RepoHandler(BaseHandler):
         self.mongo_client = mongo_client
         self.repos_collection = self.mongo_client.ktqueue.repos
 
-    @tornado.web.authenticated
+    @apiauthenticated
     async def delete(self, id):
         print(id)
         self.repos_collection.delete_one({'_id': bson.ObjectId(id)})

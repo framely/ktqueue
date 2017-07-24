@@ -1,7 +1,7 @@
 <template>
 <div>
   <div class="table-header">
-    <el-button size="small" type="primary" @click="checkAuth(), createRepoDialog.visible = true">Create Repo</el-button>
+    <el-button size="small" type="primary" @click="createRepoDialog.visible = true">Create Repo</el-button>
     <el-pagination layout="prev, pager, next" :page-size="reposData.pageSize" :total="reposData.total" @current-change="loadRepos">
     </el-pagination>
   </div>
@@ -51,7 +51,6 @@
 export default {
   template: '#tq-repos-template',
   props: {
-    checkAuth: Function
   },
   data: function () {
     return {

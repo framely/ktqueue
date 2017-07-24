@@ -23,3 +23,14 @@ class BaseHandler(tornado.web.RequestHandler):
         if not ktqueue.settings.auth_required:
             return 'anonymous'
         return None
+
+
+def apiauthenticated(method):
+    """ Return 401 if user is not authenticated
+    """
+    @functools.wraps(method)
+    def wrapper(self, *args, **kwargs):
+        if not self.current_user:
+            raise tornado.web.HTTPError(401)
+        return method(self, *args, **kwargs)
+    return wrapper

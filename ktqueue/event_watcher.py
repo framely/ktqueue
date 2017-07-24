@@ -76,10 +76,6 @@ async def watch_pod(k8s_client):
         if not job_exist:
             return
 
-        if event['object']['status']['phase'] == 'Pending':
-            jobs_collection.update_one({'name': job_name}, {'$set': {'status': 'Pending'}})
-            return
-
         state = {}
         job_update = {}
         status = (None, None)
@@ -90,6 +86,9 @@ async def watch_pod(k8s_client):
                 status_str = '{}: {}'.format(*status)
                 continue
             job_update['state'] = state
+        elif event['object']['status']['phase'] == 'Pending':
+            jobs_collection.update_one({'name': job_name}, {'$set': {'status': 'Pending'}})
+            return
         else:
             status_str = '{}: {}'.format(event['object']['status']['phase'], event['object']['status']['reason'])
 

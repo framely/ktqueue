@@ -28,7 +28,7 @@
          <div class="job-expand-item"><label>name: </label><div>{{ scope.row.name }}</div></div>
          <div class="job-expand-item"><label>repo: </label><div>{{ scope.row.repo }}</div></div>
          <div class="job-expand-item"><label>branch: </label><div>{{ scope.row.branch }}</div></div>
-         <div class="job-expand-item"><label>commit_id: </label><div>{{ scope.row.commit_id }}</div></div>
+         <div class="job-expand-item"><label>commit: </label><div>{{ scope.row.commit }}</div></div>
          <div class="job-expand-item"><label>command: </label><div>{{ scope.row.command }}</div></div>
          <div class="job-expand-item"><label>comments: </label><div><pre>{{ scope.row.comments }}</pre></div></div>
          <div class="job-expand-item"><label>Edit: </label><el-button @click="showEditJob(scope.$index, jobsData.data)" type="text" size="small">Edit</el-button></div>
@@ -92,7 +92,7 @@
         :show-overflow-tooltip="true">
       </el-table-column>
       <el-table-column
-        prop="gpu_num"
+        prop="gpuNum"
         label="GPUs"
         width="80"
         align="center">
@@ -217,13 +217,14 @@ export default {
         name: true,
         repo: true,
         branch: true,
-        // eslint-disable-next-line
-        commit_id: true,
+        commit: true,
+        cpuLimit: true,
+        memoryLimit: true
       }
       this.editJobDialog.type = 'edit'
       var line = tableData[index]
       if (line.status !== 'ManualStop' && line.status !== 'Completed') {
-        for (var field of ['node', 'gpu_num', 'image', 'command', 'volumeMounts']) {
+        for (var field of ['node', 'gpuNum', 'image', 'command', 'volumeMounts']) {
           this.editJobDialog.disabledFields[field] = true
         }
       }
@@ -358,7 +359,7 @@ export default {
           'comments': job.comments
         }
         if (job.status === 'ManualStop' || job.status === 'Completed') {
-          for (var field of ['node', 'gpu_num', 'image', 'command', 'volumeMounts']) {
+          for (var field of ['node', 'gpuNum', 'image', 'command', 'volumeMounts']) {
             updateBody[field] = job[field]
           }
         }

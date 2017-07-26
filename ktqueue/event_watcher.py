@@ -101,7 +101,7 @@ async def watch_pod(k8s_client):
             pass
         elif event['object']['spec'].get('nodeName', None):
             job_update['runningNode'] = event['object']['spec']['nodeName']
-            node_used_gpus[event['object']['spec']['nodeName']][pod_name] = int(job_exist['gpu_num'])
+            node_used_gpus[event['object']['spec']['nodeName']][pod_name] = int(job_exist['gpuNum'])
 
         # Job is being terminated should not affect job status
         if labels.get('ktqueue-terminating', None) == 'true':

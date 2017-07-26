@@ -1,16 +1,16 @@
 const defaultJobData = {
   name: '',
   node: null,
-  // eslint-disable-next-line
-  gpu_num: 1, // TODO
+  gpuNum: 0,
   command: '',
   image: '',
   repo: '',
   branch: '',
-  // eslint-disable-next-line
-  commit_id: '', // TODO
+  commit: '',
   comments: '',
-  volumeMounts: []
+  volumeMounts: [],
+  cpuLimit: '1.5',
+  memoryLimit: '2Gi'
 }
 export {
   defaultJobData

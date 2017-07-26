@@ -4,6 +4,7 @@ import os
 import re
 import logging
 import bson
+from collections import defaultdict
 
 import tornado.web
 import tornado.websocket
@@ -17,7 +18,8 @@ from ktqueue.utils import KTQueueDefaultCredentialProvider
 from ktqueue import settings
 
 
-def generate_job(name, command, node, gpu_num, image, repo, branch, commit_id, comments, mounts, load_nvidia_driver=None):
+def generate_job(name, command, node, gpu_num, image, repo, branch, commit_id,
+                 comments, mounts, load_nvidia_driver=None, cpu_limit=None, memory_limit=None):
     """Generate a job description in JSON format."""
 
     command_kube = 'cd $WORK_DIR && ' + command
@@ -63,6 +65,19 @@ def generate_job(name, command, node, gpu_num, image, repo, branch, commit_id, c
             'mountPath': '/nvidia-drivers',
         })
 
+    # resources
+    resources = {
+        'limits': {
+            'alpha.kubernetes.io/nvidia-gpu': gpu_num,
+        },
+    }
+
+    if cpu_limit:
+        resources['limits']['cpu'] = cpu_limit
+
+    if memory_limit:
+        resources['limits']['memory'] = memory_limit
+
     # cephfs
     volumes.append(settings.sfs_volume)
     volumeMounts.append({
@@ -89,11 +104,7 @@ def generate_job(name, command, node, gpu_num, image, repo, branch, commit_id, c
                             'image': image,
                             # 'imagePullPolicy': 'IfNotPresent',
                             'command': ['sh', '-c', command_kube],
-                            'resources': {
-                                'limits': {
-                                    'alpha.kubernetes.io/nvidia-gpu': gpu_num,
-                                },
-                            },
+                            'resources': resources,
                             'volumeMounts': volumeMounts,
                             'env': [
                                 {
@@ -140,7 +151,7 @@ async def clone_code(name, repo, branch, commit_id, jobs_collection, job_dir, cr
             jobs_collection.update_one({'name': name}, {'$set': {'status': 'FetchError'}})
             raise
         if not commit_id:
-            jobs_collection.update_one({'name': name}, {'$set': {'commit_id': cloner.commit_id}})
+            jobs_collection.update_one({'name': name}, {'$set': {'commit': cloner.commit_id}})
     else:
         os.makedirs(os.path.join('/cephfs/ktqueue/jobs', name, 'code'))
 
@@ -163,7 +174,7 @@ class JobsHandler(BaseHandler):
             {
                 "name": "test-17",
                 "command": "echo 'aW1wb3J0IHRlbnNvcmZsb3cgYXMgdGYKaW1wb3J0IHRpbWUKc2Vzc2lvbiA9IHRmLlNlc3Npb24oKQpmb3IgaSBpbiByYW5nZSg2MDApOgogICAgdGltZS5zbGVlcCgxKQogICAgcHJpbnQoaSkK' | base64 -d | python3",
-                "gpu_num": 1,
+                "gpuNum": 1,
                 "image": "comzyh/tf_image",
                 "repo": "https://github.com/comzyh/TF_Docker_Images.git",
                 "commit_id": "3701b94219fb06974f485cabf99ad88019afe618"
@@ -182,7 +193,8 @@ class JobsHandler(BaseHandler):
 
         if not self.__job_name_pattern.match(name):
             self.set_status(400)
-            self.finish({"message": "illegal task name, regex used for validation is [a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*"})
+            self.finish(
+                {"message": "illegal task name, regex used for validation is [a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*"})
             return
 
         # job with same name is forbidden
@@ -193,20 +205,22 @@ class JobsHandler(BaseHandler):
 
         command = body_arguments.get('command')
         node = body_arguments.get('node', None)
-        gpu_num = int(body_arguments.get('gpu_num'))
+        gpu_num = int(body_arguments.get('gpuNum'))
         image = body_arguments.get('image')
         repo = body_arguments.get('repo', None)
         branch = body_arguments.get('branch', None)
-        commit_id = body_arguments.get('commit_id', None)
+        commit_id = body_arguments.get('commit', None)
         comments = body_arguments.get('comments', None)
         mounts = body_arguments.get('volumeMounts', [])
+        cpu_limit = body_arguments.get('cpuLimit', None)
+        memory_limit = body_arguments.get('memoryLimit', None)
 
         job_dir = os.path.join('/cephfs/ktqueue/jobs/', name)
 
         job = generate_job(
             name=name, command=command, node=node, gpu_num=gpu_num, image=image,
             repo=repo, branch=branch, commit_id=commit_id, comments=comments,
-            mounts=mounts
+            mounts=mounts, cpu_limit=cpu_limit, memory_limit=memory_limit
         )
 
         self.jobs_collection.update_one({'name': name}, {'$set': {
@@ -214,16 +228,18 @@ class JobsHandler(BaseHandler):
             'node': node,
             'user': user,
             'command': command,
-            'gpu_num': gpu_num,
+            'gpuNum': gpu_num,
             'repo': repo,
             'branch': branch,
-            'commit_id': commit_id,
+            'commit': commit_id,
             'comments': comments,
             'image': image,
             'status': 'fetching',
             'tensorboard': False,
             'hide': False,
             'volumeMounts': mounts,
+            'cpuLimit': cpu_limit,
+            'memoryLimit': memory_limit,
         }}, upsert=True)
         self.finish(json.dumps({'message': 'job {} successful created.'.format(name)}))
 
@@ -312,7 +328,7 @@ class JobsHandler(BaseHandler):
         allowedFields = ['hide', 'comments', 'tags', 'fav']
         job = self.jobs_collection.find_one({'_id': bson.ObjectId(body_arguments['_id'])})
         if job['status'] in ('ManualStop', 'Completed'):
-            allowedFields += ['node', 'gpu_num', 'image', 'command', 'volumeMounts']
+            allowedFields += ['node', 'gpuNum', 'image', 'command', 'volumeMounts', 'cpuLimit', 'memoryLimit']
         update_data = {k: v for k, v in body_arguments.items() if k in allowedFields}
         self.jobs_collection.update_one({'_id': bson.ObjectId(body_arguments['_id'])}, {'$set': update_data})
         ret = self.jobs_collection.find_one({'_id': bson.ObjectId(body_arguments['_id'])})
@@ -453,14 +469,16 @@ class RestartJobHandler(BaseHandler):
     @convert_asyncio_task
     @apiauthenticated
     async def post(self, job):
-        await k8s_delete_job(self.k8s_client, job)
-        job = self.jobs_collection.find_one({'name': job})
+        job_name = job
+        await k8s_delete_job(self.k8s_client, job_name)
+        job = defaultdict(lambda: None)
+        job.update(self.jobs_collection.find_one({'name': job_name}))
         job_dir = os.path.join('/cephfs/ktqueue/jobs/', job['name'])
 
         job_description = generate_job(
-            name=job['name'], command=job['command'], node=job['node'], gpu_num=job['gpu_num'], image=job['image'],
-            repo=job['name'], branch=job['command'], commit_id=job['commit_id'], comments=job['comments'],
-            mounts=job['volumeMounts']
+            name=job['name'], command=job['command'], node=job['node'], gpu_num=job['gpuNum'], image=job['image'],
+            repo=job['name'], branch=job['command'], commit_id=job['commit'], comments=job['comments'],
+            mounts=job['volumeMounts'], cpu_limit=job['cpuLimit'], memory_limit=job['memoryLimit'],
         )
 
         if job['status'] == 'FetchError':
@@ -471,7 +489,7 @@ class RestartJobHandler(BaseHandler):
         # Refetch
         if job['status'] == 'FetchError':
             await clone_code(
-                name=job['name'], repo=job['repo'], branch=job['branch'], commit_id=job['commit_id'],
+                name=job['name'], repo=job['repo'], branch=job['branch'], commit_id=job['commit'],
                 jobs_collection=self.jobs_collection, job_dir=job_dir,
                 crediential=KTQueueDefaultCredentialProvider(
                     repo=job['repo'], user=self.get_current_user(), mongo_client=self.mongo_client
@@ -498,10 +516,12 @@ class TensorBoardHandler(BaseHandler):
         logdir = body_arguments.get('logdir', '/cephfs/ktqueue/logs/{job}/train'.format(job=job))
         command = 'tensorboard --logdir {logdir} --host 0.0.0.0'.format(logdir=logdir)
 
-        job_record = self.jobs_collection.find_one({'name': job})
+        job_record = defaultdict(lambda: None)
+        job_record.update(self.jobs_collection.find_one({'name': job}))
         job_description = generate_job(
             name=job_record['name'], command=command, node=job_record['node'], gpu_num=0, image=job_record['image'],
             repo=None, branch=None, commit_id=None, comments=None, mounts=job_record['volumeMounts'],
+            cpu_limit=job_record['cpuLimit'], memory_limit=job_record['memoryLimit'],
             load_nvidia_driver=True,
         )
         pod_spec = dict(job_description['spec']['template']['spec'])

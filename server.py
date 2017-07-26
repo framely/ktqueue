@@ -45,8 +45,14 @@ def create_db_index():
     client.ktqueue.jobs.create_index([("status", pymongo.ASCENDING)])
     client.ktqueue.credentials.create_index([("repo", pymongo.ASCENDING)], unique=True)
     client.ktqueue.oauth.create_index([("provider", pymongo.ASCENDING), ("id", pymongo.ASCENDING)], unique=True)
+
+    # compatibility
     client.ktqueue.jobs.update_many({'hide': {'$exists': False}}, {'$set': {'hide': False}})
     client.ktqueue.jobs.update_many({'fav': {'$exists': False}}, {'$set': {'fav': False}})
+    client.ktqueue.jobs.update_many({'memoryLimit': {'$exists': False}}, {'$set': {'memoryLimit': None}})
+    client.ktqueue.jobs.update_many({'cpuLimit': {'$exists': False}}, {'$set': {'cpuLimit': None}})
+    client.ktqueue.jobs.update_many({'commit_id': {'$exists': True}}, {'$rename': {'commit_id': 'commit'}})
+    client.ktqueue.jobs.update_many({'gpu_num': {'$exists': True}}, {'$rename': {'gpu_num': 'gpuNum'}})
 
 
 def get_app():

@@ -1,3 +1,9 @@
+<style>
+.el-form-item.inline-item {
+  margin-right: 1em;
+  display: inline-block;
+}
+</style>
 <template>
 <el-dialog :title="title" :visible.sync="show" @close="() => this.$emit('cancel')" size="large">
   <el-form ref="form" :model="internalData" label-width="95px" >
@@ -11,8 +17,14 @@
       </el-select>
       <label> (avail/total) </label>
     </el-form-item>
-    <el-form-item label="GPUs">
-      <el-input-number v-model="internalData.gpu_num" :disabled="disabledFields.gpu_num"></el-input-number>
+    <el-form-item label="GPUs" class="inline-item">
+      <el-input-number v-model="internalData.gpuNum" :disabled="disabledFields.gpuNum"></el-input-number>
+    </el-form-item>
+    <el-form-item label="MemoryLimit" class="inline-item">
+      <el-input v-model="internalData.memoryLimit" :disabled="disabledFields.memoryLimit" placeholder="NoLimit"></el-input>
+    </el-form-item>
+    <el-form-item label="CPULimit" class="inline-item">
+      <el-input v-model="internalData.cpuLimit" :disabled="disabledFields.cpuLimit" placeholder="NoLimit"></el-input>
     </el-form-item>
     <el-form-item label="Command" required>
       <el-input type="textarea" :rows=3 v-model="internalData.command" :disabled="disabledFields.command"></el-input>
@@ -26,8 +38,8 @@
     <el-form-item label="Branch">
       <el-input v-model="internalData.branch" :disabled="disabledFields.branch"></el-input>
     </el-form-item>
-    <el-form-item label="Commit id">
-      <el-input v-model="internalData.commit_id" :disabled="disabledFields.commit_id"></el-input>
+    <el-form-item label="Commit">
+      <el-input v-model="internalData.commit" :disabled="disabledFields.commit"></el-input>
     </el-form-item>
     <el-form-item label="Comments">
       <el-input type="textarea" :rows=3 v-model="internalData.comments" :disabled="disabledFields.comments"></el-input>

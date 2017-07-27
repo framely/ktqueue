@@ -67,7 +67,7 @@ def get_app():
     app_kwargs['cookie_secret'] = ktqueue.settings.cookie_secret
     application = tornado.web.Application([
         (r'/()', tornado.web.StaticFileHandler, {
-            'path': __frontend_path,
+            'path': __dist_path,
             'default_filename': 'index.html'
         }),
         (r'/dist/(.*)', tornado.web.StaticFileHandler, {'path': __dist_path}),

@@ -1,6 +1,8 @@
 var path = require('path')
 var webpack = require('webpack')
 var ExtractTextPlugin = require('extract-text-webpack-plugin')
+var HtmlWebpackPlugin = require('html-webpack-plugin')
+
 module.exports = {
   entry: {
     app: './src/main.js',
@@ -58,8 +60,9 @@ module.exports = {
     }
   },
   devServer: {
-    historyApiFallback: true,
-    noInfo: true,
+    historyApiFallback: {
+      index: '/dist/index.html'
+    },
     port: 8081,
     proxy: {
       '/api': {
@@ -81,7 +84,12 @@ module.exports = {
   },
   plugins: [
     new ExtractTextPlugin('styles.css'),
-    new webpack.optimize.CommonsChunkPlugin({ name: 'vendor', filename: 'vendor.js' })
+    new webpack.optimize.CommonsChunkPlugin({ name: 'vendor', filename: 'vendor.js' }),
+    new HtmlWebpackPlugin({
+      hash: true,
+      template: 'src/index.html',
+      filename: 'index.html'
+    })
   ],
   devtool: '#eval-source-map'
 }

@@ -1,16 +1,21 @@
-# ktqueue
+# KTQueue
 
-kubernetes task queue
+kubernetes task queue with GPU support
 
-# feature
+# Features
 
 - support GPU tasks
-- support assigning task to node manually
-- view logs
-- mount host-path to Pod
-- tensorboard manage & proxy
-- git clone repository with ssh-key or username & password
+- support assigning the task to node manually
+- realtime logs on webpage & log version management
+- mount host-path to Pod manually
+- Tensorboard manage & proxy
+- git clone repository with ssh-key or username & password or Github OAuth
+- CPU & Memory limit supported
 
-# deploy
+# screenshoot
 
-deploy guide under [deploy](./deploy) directory
+![screenshoot](https://user-images.githubusercontent.com/1068203/28708229-10e6e19e-73ae-11e7-882f-f4fb6bff877a.png)
+
+# How to deploy
+
+deployment guide under [deploy](./deploy) directory

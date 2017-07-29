@@ -15,6 +15,8 @@ RUN echo "deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ xenial main restricte
 # install python3 and pip
 RUN apt-get update
 RUN apt-get install -y wget python3.5 python3-pip locales
+
+# generate UTF-8 locales, to avoid encoding error when printing logs
 RUN locale-gen en_US.UTF-8
 
 # add tensorflow pakcage and install tensorflow

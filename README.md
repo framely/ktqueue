@@ -19,3 +19,9 @@ kubernetes task queue with GPU support
 # How to deploy
 
 deployment guide under [deploy](./docs/deploy) directory
+
+# How to build images for KTQueue
+
+You can use any framework you want as long as you have the correct docker image, here are examples to build docker image for KTQueue
+
+- [tensorflow](./docs/docker_image_example/tensorflow)

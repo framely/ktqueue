@@ -18,4 +18,4 @@ kubernetes task queue with GPU support
 
 # How to deploy
 
-deployment guide under [deploy](./deploy) directory
+deployment guide under [deploy](./docs/deploy) directory

@@ -219,7 +219,8 @@ export default {
         branch: true,
         commit: true,
         cpuLimit: true,
-        memoryLimit: true
+        memoryLimit: true,
+        autoRestart: true,
       }
       this.editJobDialog.type = 'edit'
       var line = tableData[index]

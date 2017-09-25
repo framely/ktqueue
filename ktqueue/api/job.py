@@ -19,7 +19,7 @@ from ktqueue import settings
 
 
 def generate_job(name, command, node, gpu_num, image, repo, branch, commit_id,
-                 comments, mounts, load_nvidia_driver=None, cpu_limit=None, memory_limit=None):
+                 comments, mounts, load_nvidia_driver=None, cpu_limit=None, memory_limit=None, auto_restart=False):
     """Generate a job description in JSON format."""
 
     command_kube = 'cd $WORK_DIR && ' + command
@@ -131,7 +131,7 @@ def generate_job(name, command, node, gpu_num, image, repo, branch, commit_id,
                         }
                     ],
                     'volumes': volumes,
-                    'restartPolicy': 'OnFailure',
+                    'restartPolicy': 'OnFailure' if auto_restart else 'Never',
                     'nodeSelector': node_selector,
                 }
             }
@@ -214,13 +214,15 @@ class JobsHandler(BaseHandler):
         mounts = body_arguments.get('volumeMounts', [])
         cpu_limit = body_arguments.get('cpuLimit', None)
         memory_limit = body_arguments.get('memoryLimit', None)
+        auto_restart = body_arguments.get('autoRestart', False)
 
         job_dir = os.path.join('/cephfs/ktqueue/jobs/', name)
 
         job = generate_job(
             name=name, command=command, node=node, gpu_num=gpu_num, image=image,
             repo=repo, branch=branch, commit_id=commit_id, comments=comments,
-            mounts=mounts, cpu_limit=cpu_limit, memory_limit=memory_limit
+            mounts=mounts, cpu_limit=cpu_limit, memory_limit=memory_limit,
+            auto_restart=auto_restart
         )
 
         self.jobs_collection.update_one({'name': name}, {'$set': {

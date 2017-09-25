@@ -10,7 +10,8 @@ const defaultJobData = {
   comments: '',
   volumeMounts: [],
   cpuLimit: '1.5',
-  memoryLimit: '2Gi'
+  memoryLimit: '2Gi',
+  autoRestart: false
 }
 export {
   defaultJobData

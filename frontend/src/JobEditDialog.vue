@@ -44,6 +44,9 @@
     <el-form-item label="Comments">
       <el-input type="textarea" :rows=3 v-model="internalData.comments" :disabled="disabledFields.comments"></el-input>
     </el-form-item>
+    <el-form-item label="Auto Restart" class="inline-item">
+      <el-checkbox v-model="internalData.autoRestart" :disabled="disabledFields.autoRestart" class="inline-item"></el-checkbox>
+    </el-form-item>
     <el-form-item v-for="(volume, index) in internalData.volumeMounts" :key="volume.key" :label="'Volume'" :rules="{
         required: true, message: 'volumeMounts should not be empty', trigger: 'blur'
       }">

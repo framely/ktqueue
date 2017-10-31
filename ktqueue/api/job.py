@@ -93,6 +93,7 @@ def generate_job(name, command, node, gpu_num, image, repo, branch, commit_id,
         },
         'spec': {
             'parallelism': 1,
+            'backoffLimit': 6 if auto_restart else 1,
             'template': {
                 'metadata': {
                     'name': name,
@@ -131,7 +132,7 @@ def generate_job(name, command, node, gpu_num, image, repo, branch, commit_id,
                         }
                     ],
                     'volumes': volumes,
-                    'restartPolicy': 'OnFailure' if auto_restart else 'Never',
+                    'restartPolicy': 'OnFailure',
                     'nodeSelector': node_selector,
                 }
             }

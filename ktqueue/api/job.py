@@ -132,7 +132,7 @@ def generate_job(name, command, node, gpu_num, image, repo, branch, commit_id,
                         }
                     ],
                     'volumes': volumes,
-                    'restartPolicy': 'OnFailure',
+                    'restartPolicy': 'OnFailure' if auto_restart else 'Never',
                     'nodeSelector': node_selector,
                 }
             }

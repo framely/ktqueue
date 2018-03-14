@@ -69,6 +69,7 @@ def generate_job(name, command, node, gpu_num, image, repo, branch, commit_id,
     resources = {
         'limits': {
             'alpha.kubernetes.io/nvidia-gpu': gpu_num,
+            'nvidia.com/gpu': gpu_num,
         },
     }
 

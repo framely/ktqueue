@@ -460,6 +460,8 @@ class StopJobHandler(BaseHandler):
         await k8s_delete_job(self.k8s_client, job)
         self.jobs_collection.update_one({'name': job}, {'$set': {'status': 'ManualStop'}})
         self.finish({'message': 'Job {} successful deleted.'.format(job)})
+        # 这儿跟watch的时序好像会出点问题
+        self.jobs_collection.update_one({'name': job}, {'$set': {'status': 'ManualStop'}})
 
 
 class RestartJobHandler(BaseHandler):

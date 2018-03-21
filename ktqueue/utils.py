@@ -44,36 +44,46 @@ async def save_job_log(job_name, pod_name, k8s_client):
 
 
 async def k8s_delete_job(k8s_client, job, pod_name=None, save_log=True):
-    if not pod_name:
+    await k8s_client.call_api(
+        method='DELETE',
+        params={'gracePeriodSeconds': 0},
+        api='/apis/batch/v1/namespaces/{namespace}/jobs/{name}'.format(namespace=settings.job_namespace, name=job)
+    )
+
+    await k8s_client.call_api(
+        api='/api/v1/namespaces/{namespace}/pods'.format(namespace=settings.job_namespace),
+        method='PATCH',
+        params={'labelSelector': 'job-name={job}'.format(job=job)},
+        headers={'Content-Type': 'application/json-patch+json'},
+        data=[{"op": "add", "path": "/metadata/labels/ktqueue-terminating", "value": "true"}]
+    )
+
+    if pod_name is None:
         pods = await k8s_client.call_api(
             method='GET',
             api='/api/v1/namespaces/{namespace}/pods'.format(namespace=settings.job_namespace),
             params={'labelSelector': 'job-name={job}'.format(job=job)}
         )
-        if pods.get('items', None):
-            pod_name = pods['items'][0]['metadata']['name']
-        else:
-            return
-
-    if save_log:
-        await save_job_log(job_name=job, pod_name=pod_name, k8s_client=k8s_client)
-
-    await k8s_client.call_api(
-        api='/api/v1/namespaces/{namespace}/pods/{name}'.format(namespace=settings.job_namespace, name=pod_name),
-        method='PATCH',
-        headers={'Content-Type': 'application/json-patch+json'},
-        data=[{"op": "add", "path": "/metadata/labels/ktqueue-terminating", "value": "true"}]
-    )
-
-    await k8s_client.call_api(
-        method='DELETE',
-        api='/apis/batch/v1/namespaces/{namespace}/jobs/{name}?gracePeriodSeconds={grace_seconds}'.format(namespace=settings.job_namespace, name=job, grace_seconds=0)
-    )
-    await k8s_client.call_api(
-        method='DELETE',
-        api='/api/v1/namespaces/{namespace}/pods/{name}'.format(namespace=settings.job_namespace, name=pod_name)
-    )
-
+        if save_log and pods.get('items', None):
+            for pod in pods["items"]:
+                name = pod['metadata']['name']
+                await save_job_log(job_name=job, pod_name=name, k8s_client=k8s_client)
+        await k8s_client.call_api(
+            method='DELETE',
+            params={
+                'labelSelector': 'job-name={job}'.format(job=job),
+                'gracePeriodSeconds': 0,
+            },
+            api='/api/v1/namespaces/{namespace}/pods'.format(namespace=settings.job_namespace)
+        )
+    else:
+        if save_log:
+            await save_job_log(job_name=job, pod_name=pod_name, k8s_client=k8s_client)
+        await k8s_client.call_api(
+            method='DELETE',
+            params={'gracePeriodSeconds': 0},
+            api='/api/v1/namespaces/{namespace}/pods/{name}'.format(namespace=settings.job_namespace, name=pod_name)
+        )
 
 class KTQueueDefaultCredentialProvider(GitCredentialProvider):
     """Give the authorization method for a (user, repo) combination

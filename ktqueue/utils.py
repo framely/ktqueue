@@ -67,7 +67,7 @@ async def k8s_delete_job(k8s_client, job, pod_name=None, save_log=True):
 
     await k8s_client.call_api(
         method='DELETE',
-        api='/apis/batch/v1/namespaces/{namespace}/jobs/{name}'.format(namespace=settings.job_namespace, name=job)
+        api='/apis/batch/v1/namespaces/{namespace}/jobs/{name}?gracePeriodSeconds={grace_seconds}'.format(namespace=settings.job_namespace, name=job, grace_seconds=0)
     )
     await k8s_client.call_api(
         method='DELETE',

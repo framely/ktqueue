@@ -54,6 +54,12 @@
               </el-switch>
            </div>
          </div>
+         <div class="job-expand-item"><label>Monitoring: </label>
+           <div>
+             <iframe :src="showMonitoring(scope.row.name, 'cpu')" width="600" height="200" frameborder="0"></iframe>
+             <iframe :src="showMonitoring(scope.row.name, 'ram')" width="600" height="200" frameborder="0"></iframe>
+           </div>
+        </div>
          <p v-if="scope.row.tensorboard">
            <a :href="'/tensorboard/' + scope.row.name + '/'">TensorBoard</a>
          </p>
@@ -197,6 +203,13 @@ export default {
   },
   methods: {
     moment,
+    showMonitoring: function(jobName, type) {
+      if (type === "cpu") {
+        return `http://10.8.0.42:3000/d-solo/EWPt1V4mk/ktqueue?orgId=1&panelId=2&from=now-1d&to=now&var-jobName=${jobName}`
+      } else if (type === "ram") {
+        return `http://10.8.0.42:3000/d-solo/EWPt1V4mk/ktqueue?orgId=1&panelId=4&from=now-1d&to=now&var-jobName=${jobName}`
+      }
+    },
     showCreateJob: function () {
       this.editJobDialog.title = 'Create job'
       this.editJobDialog.disabledFields = {}

@@ -17,6 +17,10 @@
         @size-change="pageSizeChange"
         >
       </el-pagination>
+      <div class="searchJobName">
+          <el-input size="small" v-model="searchJobName" clearable placeholder="请输入内容"></el-input>
+          <el-button size="small" type="primary" @click="searchJobNameFunc">Search</el-button>
+      </div>
     </div>
     <el-table
       :data="jobsData.data"
@@ -163,6 +167,7 @@ export default {
     }
     const data = {
       loading: null,
+      searchJobName: "",
       defaultFilter: defaultFilter,
       jobsFilter: this.$route.query.jobsFilter || defaultFilter.jobsFilter,
       jobsFilterUser: ensureArray(this.$route.query.user) || defaultFilter.jobsFilterUser,
@@ -203,6 +208,9 @@ export default {
   },
   methods: {
     moment,
+    searchJobNameFunc: function () {
+      this.loadJobs(1, this.jobsData.pageSize, this.searchJobName)
+    },
     showMonitoring: function(jobName, type) {
       if (type === "cpu") {
         return `https://grafana.in.naturali.io/d-solo/EWPt1V4mk/ktqueue?orgId=1&panelId=2&from=now-1d&to=now&var-jobName=${jobName}`
@@ -326,7 +334,7 @@ export default {
       this.pageSizeToGo = pageSize
       this.loadJobs(Math.floor((this.jobsData.page - 1) * this.jobsData.pageSize / pageSize) + 1, pageSize)
     },
-    loadJobs: function (page, pageSize) {
+    loadJobs: function (page, pageSize, searchJobName) {
       pageSize = pageSize || this.jobsData.pageSize
       this.loading = Loading.service({ target: this.$refs.rootdiv })
       var params = {}
@@ -345,8 +353,12 @@ export default {
       if (this.jobsFilterNode) {
         params['node'] = this.jobsFilterNode
       }
+      if (this.searchJobName) {
+        params['searchJobName'] = this.searchJobName
+      }
       params['pageSize'] = pageSize
       var routerQuery = {
+        searchJobName: searchJobName,
         jobsFilter: this.jobsFilter,
         user: this.jobsFilterUser,
         node: this.jobsFilterNode,
@@ -465,13 +477,21 @@ export default {
 <style lang="scss">
 .table-header {
   padding: .5em 0;
-  .el-pagination {
+  .el-pagination,
+  .searchJobName {
     display: inline-block;
   }
   .el-pagination,
   .el-button,
-  .el-radio-group {
+  .el-radio-group,
+  .el-input, {
     vertical-align: middle;;
+  }
+  .el-input {
+    width: 250px;
+  }
+  .searchJobName {
+    float: right;
   }
 }
 .inline-form-span {

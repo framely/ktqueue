@@ -275,6 +275,7 @@ class JobsHandler(BaseHandler):
         tags = self.get_arguments('tag')
         user = self.get_arguments('user[]')
         node = self.get_arguments('node[]')
+        searchJobName = self.get_argument('searchJobName', None)
 
         query = {}
 
@@ -283,6 +284,9 @@ class JobsHandler(BaseHandler):
             query['hide'] = False
         elif hide != 'all':  # 'all' means no filter
             query['hide'] = False if hide == '0' else True
+
+        if searchJobName:
+            query['name'] = re.compile(".*?%s.*?" %searchJobName, re.IGNORECASE)
 
         # tags
         if tags:

@@ -76,6 +76,10 @@ async def watch_pod(k8s_client):
         if not job_exist:
             return
 
+        if event['type'] == 'DELETED':
+            jobs_collection.update_one({'name': job_name}, {'$set': {'status': 'ManualStop'}})
+            return
+
         state = {}
         job_update = {}
         status = (None, None)

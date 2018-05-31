@@ -300,7 +300,11 @@ class JobsHandler(BaseHandler):
         if status:
             if status == '$RunningExtra':
                 query.pop('hide', None)
-                query['status'] = {'$nin': ['Completed', 'ManualStop', 'FetchError']}
+                query['status'] = {'$nin': [
+                    'Completed', 'ManualStop', 'FetchError', 
+                    re.compile(".*?Failed.*?", re.IGNORECASE),
+                    re.compile(".*?terminated.*?", re.IGNORECASE),
+                ]}
             else:
                 query['status'] = status
         # user

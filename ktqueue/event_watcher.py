@@ -121,7 +121,6 @@ async def watch_pod(k8s_client):
 
         if event['type'] == 'DELETED' and status[1] != 'Completed':
             jobs_collection.update_one({'name': job_name}, {'$set': {'status': 'ManualStop'}})
-            return
 
         # When a job is successful finished, save log and do not watch it any more
         if status[0] == 'terminated':

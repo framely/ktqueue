@@ -466,6 +466,7 @@ class StopJobHandler(BaseHandler):
     @apiauthenticated
     async def post(self, job):
         await k8s_delete_job(self.k8s_client, job)
+        self.jobs_collection.update_one({'name': job}, {'$set': {'status': 'ManualStop'}})
         self.finish({'message': 'Job {} successful deleted.'.format(job)})
 
 class RestartJobHandler(BaseHandler):

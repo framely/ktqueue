@@ -21,7 +21,7 @@
                         </el-table-column>
                         <el-table-column prop="memory" label="MemRSS" width="100px">
                         </el-table-column>
-                        <el-table-column prop="drivers_name" label="DName" width="150px">
+                        <el-table-column prop="drivers_name" label="DName" width="180px">
                         </el-table-column>
                         <el-table-column prop="drivers_temp" label="DTemp" width="88px">
                         </el-table-column>

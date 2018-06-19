@@ -6,6 +6,7 @@
     <h2 id="tq-title">KTQueue</h2>
     <el-menu-item index="/jobs" :route="{path: '/jobs'}">Jobs</el-menu-item>
     <el-menu-item index="/repos" :route="{path: '/repos'}">Repos</el-menu-item>
+    <el-menu-item index="/monitor" :route="{path: '/monitor'}">Monitor</el-menu-item>
     <el-submenu v-if="$store.state.userInfo.username" index="currentUser">
       <template slot="title">{{$store.state.userInfo.username}}</template>
       <el-menu-item index="logout" :route="{}" @click="logout">Logout</el-menu-item>
@@ -42,7 +43,8 @@ export default {
 </script>
 
 <style lang="scss">
-#tq-header {
+body {
+  font-family: "Helvetica Neue", Helvetica, Arial, "PingFang SC", "Hiragino Sans GB", "WenQuanYi Micro Hei", "Microsoft Yahei", sans-serif;
 }
 #tq-title {
   vertical-align: middle;

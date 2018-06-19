@@ -13,3 +13,5 @@ from .tensorboard_proxy import TensorBoardProxyHandler
 from .oauth import OAuth2Handler
 from .user import CurrentUserHandler
 from .auth import AuthRequestHandler
+from .monitor import MonitorPubWSHandler
+from .monitor import MonitorSubWSHandler

@@ -28,6 +28,8 @@ from ktqueue.api import TensorBoardHandler
 from ktqueue.api import OAuth2Handler
 from ktqueue.api import CurrentUserHandler
 from ktqueue.api import AuthRequestHandler
+from ktqueue.api import MonitorPubWSHandler
+from ktqueue.api import MonitorSubWSHandler
 
 
 from ktqueue.event_watcher import watch_pod
@@ -89,6 +91,8 @@ def get_app():
         (r'/api/repos/(?P<id>[0-9a-f]+)', RepoHandler, {'mongo_client': mongo_client}),
         (r'/api/current_user', CurrentUserHandler),
         (r'/wsapi/jobs/(?P<job>[\.\w_-]+)/log', JobLogWSHandler, {'k8s_client': k8s_client, 'mongo_client': mongo_client}),
+        (r'/wsapi/monitor/pub/(?P<hostname>[\.\w_-]+)/', MonitorPubWSHandler),
+        (r'/wsapi/monitor/sub/(?P<hostname>[\.\w_-]+)/', MonitorSubWSHandler),
     ], **app_kwargs)
     return application
 

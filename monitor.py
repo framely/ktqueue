@@ -20,7 +20,7 @@ NvidiaDriverInfoRE = re.compile(
     re.X|re.S)
 
 NvidiaHardwareInfoRE = re.compile(
-    r"""\|\s+(?P<Index>\d+)\s+(?P<Name>.*?)\s{4}.*?
+    r"""\|\s+(?P<Index>\d+)\s+(?P<Name>.*?)\s+[T|O].*?
         \|\s+(?P<Fan>\d+%)\s+(?P<Temp>\d+C).*?
              (?P<Pwr>\d+W\s+/\s+\d+W).*?
              (?P<Memory>[\d\.]+MiB\s+/\s+[\d\.]+MiB).*?

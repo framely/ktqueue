@@ -15,3 +15,4 @@ from .user import CurrentUserHandler
 from .auth import AuthRequestHandler
 from .monitor import MonitorPubWSHandler
 from .monitor import MonitorSubWSHandler
+from .tag import TagHandler

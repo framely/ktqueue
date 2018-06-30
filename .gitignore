@@ -91,3 +91,5 @@ ENV/
 .remote-sync.json
 dev_environment.sh
 frontend/node_modules
+
+start.sh

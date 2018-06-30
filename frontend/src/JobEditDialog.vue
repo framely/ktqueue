@@ -12,7 +12,8 @@
     </el-form-item>
     <el-form-item label="Node">
       <el-select v-model="internalData.node" clearable placeholder="Any" :disabled="disabledFields.node">
-        <el-option v-for="item in nodes" :label="item.labels['kubernetes.io/hostname'] + ' (' + (item.gpu_capacity - item.gpu_used) + '/' + item.gpu_capacity + ')'" :value="item.labels['kubernetes.io/hostname']" :key="item.labels['kubernetes.io/hostname']">
+          <el-option v-for="item in nodes" :label="item.labels['kubernetes.io/hostname'] + ' (' + (item.gpu_capacity - item.gpu_used) + '/' + item.gpu_capacity + ')'"
+            :value="item.labels['kubernetes.io/hostname']" :key="item.labels['kubernetes.io/hostname']">
         </el-option>
       </el-select>
       <label> (avail/total) </label>
@@ -44,6 +45,11 @@
     <el-form-item label="Comments">
       <el-input type="textarea" :rows=3 v-model="internalData.comments" :disabled="disabledFields.comments"></el-input>
     </el-form-item>
+      <el-form-item label="Tags">
+        <el-select v-model="internalData.tags" multiple filterable allow-create default-first-option placeholder="" style="width: 100%;">
+          <el-option v-for="item in dynamicTags" :key="item" :label="item" :value="item"></el-option>
+        </el-select>
+      </el-form-item>
     <el-form-item label="Auto Restart">
       <el-checkbox v-model="internalData.autoRestart" :disabled="disabledFields.autoRestart"></el-checkbox>
     </el-form-item>
@@ -75,7 +81,9 @@
 </el-dialog>
 </template>
 <script>
-import { defaultJobData } from './const.js'
+  import {
+    defaultJobData
+  } from './const.js'
 export default {
   name: 'job-edit-dialog',
   props: {
@@ -101,17 +109,27 @@ export default {
       default: () => ({})
     }
   },
-  data () {
+    data() {
     return {
+        dynamicTags: [],
+        value10: [],
       internalData: Object.assign({}, defaultJobData)
     }
   },
   watch: {
-    data (value) {
+      data(value) {
       this.internalData = Object.assign({}, value)
     }
   },
+    mounted: function () {
+      this.getTags()
+    },
   methods: {
+      getTags: function () {
+        this.$http.get('/api/tags').then((resource) => {
+          this.dynamicTags = resource.body
+        }).catch(() => {})
+      },
     addVolumeMount: function () {
       this.data.volumeMounts.push({
         hostPath: '',
@@ -139,3 +157,42 @@ export default {
   }
 }
 </script>
+        if (index !== -1) {
+          this.data.volumeMounts.splice(index, 1)
+        }
+      },
+      repoQuerySearch: function (queryString, cb) {
+        var repos = this.repos
+        var results = queryString ? repos.filter(this.createFilter(queryString)) : repos
+        console.log(results)
+        cb(results)
+      },
+      createFilter: function (queryString) {
+        return function (candidate) {
+          return (candidate.value.indexOf(queryString.toLowerCase()) !== -1)
+        }
+      }
+    }
+  }
+</script>
+
+
+<style>
+  .el-tag {
+    margin-right: 10px;
+  }
+
+  .button-new-tag {
+    margin-left: 10px;
+    height: 32px;
+    line-height: 30px;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  .input-new-tag {
+    width: 90px;
+    margin-left: 10px;
+    vertical-align: bottom;
+  }
+</style>

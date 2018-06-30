@@ -17,7 +17,8 @@ def convert_asyncio_task(method):
 
 class BaseHandler(tornado.web.RequestHandler):
     def get_current_user(self):
-        user = self.get_secure_cookie("user")
+        try: user = self.get_secure_cookie("user")
+        except: user = None
         if user:
             return user.decode('utf-8')
         if not ktqueue.settings.auth_required:

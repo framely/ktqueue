@@ -165,6 +165,7 @@ class JobsHandler(BaseHandler):
         self.k8s_client = k8s_client
         self.mongo_client = mongo_client
         self.jobs_collection = mongo_client.ktqueue.jobs
+        self.tags_collection = mongo_client.ktqueue.setting
 
     @convert_asyncio_task
     @apiauthenticated
@@ -271,8 +272,9 @@ class JobsHandler(BaseHandler):
         page_size = int(self.get_argument('pageSize', 20))
         hide = self.get_argument('hide', None)
         fav = self.get_argument('fav', None)
+        terminated = self.get_argument('terminated', None)
         status = self.get_argument('status', None)
-        tags = self.get_arguments('tag')
+        tags = self.get_arguments('tags')
         user = self.get_arguments('user[]')
         node = self.get_arguments('node[]')
         searchJobName = self.get_argument('searchJobName', None)
@@ -290,11 +292,15 @@ class JobsHandler(BaseHandler):
 
         # tags
         if tags:
-            query['tags': {'$all': tags}]
+            query['tags'] = {'$all': tags}
 
         # fav
         if fav:
             query['fav'] = True if fav == '1' else False
+
+        # terminated
+        if terminated:
+            query['status'] = {'$in': [re.compile(".*?terminated.*?", re.IGNORECASE)]}
 
         # status; Running etc.
         if status:
@@ -344,6 +350,8 @@ class JobsHandler(BaseHandler):
         self.jobs_collection.update_one({'_id': bson.ObjectId(body_arguments['_id'])}, {'$set': update_data})
         ret = self.jobs_collection.find_one({'_id': bson.ObjectId(body_arguments['_id'])})
         ret['_id'] = str(ret['_id'])
+
+        self.tags_collection.update_one({'name': 'tags'}, {'$addToSet': {'data': {'$each': body_arguments['tags']}}}, upsert = True)
         self.finish(ret)
 
 

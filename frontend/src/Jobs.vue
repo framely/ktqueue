@@ -6,6 +6,7 @@
         <el-radio-button label="All"></el-radio-button>
         <el-radio-button label="Hidden"></el-radio-button>
         <el-radio-button label="Fav"></el-radio-button>
+        <el-radio-button label="Terminated"></el-radio-button>
         <el-radio-button label="Running"></el-radio-button>
       </el-radio-group>
       <el-pagination
@@ -35,6 +36,11 @@
          <div class="job-expand-item"><label>commit: </label><div>{{ scope.row.commit }}</div></div>
          <div class="job-expand-item"><label>command: </label><div>{{ scope.row.command }}</div></div>
          <div class="job-expand-item"><label>comments: </label><div><pre>{{ scope.row.comments }}</pre></div></div>
+         <div class="job-expand-item"><label>tags: </label>
+           <router-link v-for="(tag, index) in scope.row.tags" :key="index" :to="{path: '/jobs?searchJobName=tag: ' + tag}" target="_blank">
+             <el-tag color="#409EFF">{{ tag }}</el-tag>
+           </router-link>
+         </div>
          <div class="job-expand-item"><label>Edit: </label><el-button @click="showEditJob(scope.$index, jobsData.data)" type="text" size="small">Edit</el-button></div>
          <div class="job-expand-item"><label>Clone: </label><el-button @click="showCloneJob(scope.$index, jobsData.data)" type="text" size="small">Clone</el-button></div>
          <div class="job-expand-item">
@@ -251,6 +257,9 @@ export default {
         }
       }
       this.editJobDialog.data = Object.assign({}, line)
+      if (! this.editJobDialog.data.tags) {
+        this.editJobDialog.data.tags = []
+      }
       this.editJobDialog.visible = true
     },
     stopJob: function (index, tableData) {
@@ -335,6 +344,9 @@ export default {
       this.loadJobs(Math.floor((this.jobsData.page - 1) * this.jobsData.pageSize / pageSize) + 1, pageSize)
     },
     loadJobs: function (page, pageSize, searchJobName) {
+      if (this.$route.query && this.$route.query.searchJobName) {
+        this.searchJobName = this.$route.query.searchJobName
+      }
       pageSize = pageSize || this.jobsData.pageSize
       this.loading = Loading.service({ target: this.$refs.rootdiv })
       var params = {}
@@ -343,6 +355,8 @@ export default {
         params['hide'] = '1'
       } else if (this.jobsFilter === 'Fav') {
         params['fav'] = '1'
+      } else if (this.jobsFilter === 'Terminated') {
+        params['terminated'] = '1'
       } else if (this.jobsFilter === 'Running') {
         params['status'] = '$RunningExtra' // include all non-stop pod, like crashbackoff, pending
         params['hide'] = 'all'
@@ -353,17 +367,22 @@ export default {
       if (this.jobsFilterNode) {
         params['node'] = this.jobsFilterNode
       }
-      if (this.searchJobName) {
+      if (this.searchJobName.startsWith('tag: ')) {
+        params['tags'] = this.searchJobName.substring(5)
+      } else {
         params['searchJobName'] = this.searchJobName
       }
+      
       params['pageSize'] = pageSize
       var routerQuery = {
-        searchJobName: searchJobName,
         jobsFilter: this.jobsFilter,
         user: this.jobsFilterUser,
         node: this.jobsFilterNode,
         page: page,
         pageSize: pageSize
+      }
+      if (this.searchJobName) {
+        routerQuery['searchJobName'] = this.searchJobName
       }
       for (var k in routerQuery) {
         if (routerQuery[k] === this.defaultFilter[k]) {
@@ -385,7 +404,7 @@ export default {
           'comments': job.comments
         }
         if (job.status === 'ManualStop' || job.status === 'Completed') {
-          for (var field of ['node', 'gpuNum', 'image', 'command', 'volumeMounts']) {
+          for (var field of ['node', 'gpuNum', 'image', 'command', 'volumeMounts', 'tags']) {
             updateBody[field] = job[field]
           }
         }
@@ -432,7 +451,6 @@ export default {
       })
     },
     jobsFilterChange: function (filter) {
-      console.log(filter)
       if (filter.user !== undefined) { // which mean table.filter-change call this function
         if (filter.user.length) {
           this.jobsFilterUser = filter.user

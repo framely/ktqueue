@@ -401,7 +401,8 @@ export default {
       if (this.editJobDialog.type === 'edit') {
         var updateBody = {
           '_id': job._id,
-          'comments': job.comments
+          'comments': job.comments,
+          'tags': job.tags
         }
         if (job.status === 'ManualStop' || job.status === 'Completed') {
           for (var field of ['node', 'gpuNum', 'image', 'command', 'volumeMounts', 'tags']) {

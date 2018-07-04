@@ -344,7 +344,7 @@ export default {
       this.loadJobs(Math.floor((this.jobsData.page - 1) * this.jobsData.pageSize / pageSize) + 1, pageSize)
     },
     loadJobs: function (page, pageSize, searchJobName) {
-      if (this.$route.query && this.$route.query.searchJobName) {
+      if (this.$route.query && this.$route.query.searchJobName && ! this.searchJobName) {
         this.searchJobName = this.$route.query.searchJobName
       }
       pageSize = pageSize || this.jobsData.pageSize

@@ -172,6 +172,7 @@ export default {
       return raw
     }
     const data = {
+      first: true,
       loading: null,
       searchJobName: "",
       defaultFilter: defaultFilter,
@@ -344,7 +345,8 @@ export default {
       this.loadJobs(Math.floor((this.jobsData.page - 1) * this.jobsData.pageSize / pageSize) + 1, pageSize)
     },
     loadJobs: function (page, pageSize, searchJobName) {
-      if (this.$route.query && this.$route.query.searchJobName && ! this.searchJobName) {
+      if (this.$route.query && this.$route.query.searchJobName && ! this.searchJobName && this.first) {
+        this.first = false
         this.searchJobName = this.$route.query.searchJobName
       }
       pageSize = pageSize || this.jobsData.pageSize

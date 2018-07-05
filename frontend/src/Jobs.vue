@@ -346,9 +346,9 @@ export default {
     },
     loadJobs: function (page, pageSize, searchJobName) {
       if (this.$route.query && this.$route.query.searchJobName && ! this.searchJobName && this.first) {
-        this.first = false
         this.searchJobName = this.$route.query.searchJobName
       }
+      this.first = false
       pageSize = pageSize || this.jobsData.pageSize
       this.loading = Loading.service({ target: this.$refs.rootdiv })
       var params = {}

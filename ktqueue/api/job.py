@@ -72,6 +72,11 @@ def generate_job(name, command, node, gpu_num, image, repo, branch, commit_id,
                 'nvidia.com/gpu': gpu_num,
             },
         }
+    else:
+        #resources
+        resources = {
+            'limits': {}
+        }
 
     if cpu_limit:
         resources['limits']['cpu'] = cpu_limit

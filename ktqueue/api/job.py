@@ -65,13 +65,13 @@ def generate_job(name, command, node, gpu_num, image, repo, branch, commit_id,
             'mountPath': '/nvidia-drivers',
         })
 
-    # resources
-    resources = {
-        'limits': {
-            # 'alpha.kubernetes.io/nvidia-gpu': gpu_num,
-            'nvidia.com/gpu': gpu_num,
-        },
-    }
+        # resources
+        resources = {
+            'limits': {
+                # 'alpha.kubernetes.io/nvidia-gpu': gpu_num,
+                'nvidia.com/gpu': gpu_num,
+            },
+        }
 
     if cpu_limit:
         resources['limits']['cpu'] = cpu_limit

@@ -9,7 +9,7 @@ import urllib.parse
 
 
 class GitCredentialProvider:
-    __https_pattern = re.compile(r'https:\/\/(\w+@\w+)?[\w.\/\-+]*.git')
+    __https_pattern = re.compile(r'https?:\/\/(\w+@\w+)?[\w.\/\-+]*.git')
     __ssh_pattern = re.compile(r'\w+@[\w.]+:[\w-]+\/[\w\-+]+\.git')
 
     @classmethod

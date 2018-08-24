@@ -43,7 +43,7 @@ class NodesHandler(tornado.web.RequestHandler):
                     gpu_dict[node_name] = gpu_usage.get(node_name, 0) + gpu
             else:
                 continue
-        
+
         ret = await self.k8s_client.call_api(
             api='/api/v1/nodes',
             method='GET',

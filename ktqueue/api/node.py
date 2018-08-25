@@ -40,7 +40,8 @@ class NodesHandler(tornado.web.RequestHandler):
                 node_name = spec.get('nodeName', '')
                 status = gpu_usage.get('status', {}).get('phase', '')
                 if status and node_name and gpu and status == 'Running':
-                    gpu_dict[node_name] = gpu_usage.get(node_name, 0) + gpu
+                    gpu_dict[node_name] = gpu_dict.get(node_name, 0) + gpu
+                print(gpu_dict)
             else:
                 continue
 

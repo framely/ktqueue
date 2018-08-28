@@ -19,7 +19,6 @@ class ImageHandler(BaseHandler):
             for tag_name in x['tags']:
                 image_name = image_prefix + x['name'] + ':' + tag_name
                 images.append(image_name)
-
         if image_result:
             self.write(json.dumps({'images': images}))
         else:

@@ -118,7 +118,6 @@ async def watch_pod(k8s_client):
             job_update['status'] = status_str
 
         jobs_collection.update_one({'name': job_name}, {'$set': job_update})
-
         if event['type'] == 'DELETED' and status[1] != 'Completed':
             jobs_collection.update_one({'name': job_name}, {'$set': {'status': 'ManualStop'}})
 

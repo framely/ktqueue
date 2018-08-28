@@ -26,7 +26,6 @@ class NodesHandler(tornado.web.RequestHandler):
             api='/api/v1/namespaces/ktqueue/pods',
             method='GET',
         )
-
         gpu_dict = {}
         for gpu_usage in gpu_usages['items']:
             spec = gpu_usage.get('spec', {})
@@ -41,7 +40,6 @@ class NodesHandler(tornado.web.RequestHandler):
                 status = gpu_usage.get('status', {}).get('phase', '')
                 if status and node_name and gpu and status == 'Running':
                     gpu_dict[node_name] = gpu_dict.get(node_name, 0) + gpu
-                print(gpu_dict)
             else:
                 continue
 

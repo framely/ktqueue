@@ -140,6 +140,7 @@
     <job-edit-dialog
       :title="editJobDialog.title"
       :nodes="nodes" :repos="repos"
+      :images="images"
       :show="editJobDialog.visible"
       :data="editJobDialog.data"
       :disabled-fields="editJobDialog.disabledFields"
@@ -198,7 +199,8 @@ export default {
         type: 'create'
       },
       repos: [],
-      nodes: []
+      nodes: [],
+      images: []
     }
     return data
   },
@@ -211,6 +213,9 @@ export default {
     })
     this.$http.get('./api/nodes').then((resource) => {
       this.nodes = resource.body.items
+    })
+    this.$http.get('./api/images').then((resource) => {
+        this.images = resource.body.images
     })
   },
   methods: {

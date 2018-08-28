@@ -31,7 +31,9 @@
       <el-input type="textarea" :rows=3 v-model="internalData.command" :disabled="disabledFields.command"></el-input>
     </el-form-item>
     <el-form-item label="Image" required>
-      <el-input v-model="internalData.image" :disabled="disabledFields.image"></el-input>
+      <el-select v-model="internalData.image" clearable filterable style="width: 100%;">
+        <el-option v-for="item in images" :label="item" :value="item" :key="item"/>
+      </el-select>
     </el-form-item>
     <el-form-item label="Repo">
       <el-autocomplete v-model="internalData.repo" :fetch-suggestions="repoQuerySearch" style="width: 100%" :disabled="disabledFields.repo"></el-autocomplete>
@@ -46,7 +48,7 @@
       <el-input type="textarea" :rows=3 v-model="internalData.comments" :disabled="disabledFields.comments"></el-input>
     </el-form-item>
       <el-form-item label="Tags">
-        <el-select v-model="internalData.tags" multiple filterable allow-create default-first-option placeholder="" style="width: 100%;">
+        <el-select v-model="internalData.tags" multiple allow-create default-first-option placeholder="" style="width: 100%;">
           <el-option v-for="item in dynamicTags" :key="item" :label="item" :value="item"></el-option>
         </el-select>
       </el-form-item>
@@ -88,6 +90,10 @@ export default {
   name: 'job-edit-dialog',
   props: {
     nodes: {
+      type: Array,
+      default: []
+    },
+    images: {
       type: Array,
       default: []
     },

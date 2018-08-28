@@ -91,6 +91,8 @@ def generate_job(name, command, node, gpu_num, image, repo, branch, commit_id,
         'mountPath': '/cephfs',
     })
 
+    if not auto_restart: command_kube = command_kube + "\nexit 0"
+
     job = {
         'apiVersion': 'batch/v1',
         'kind': 'Job',

@@ -44,7 +44,7 @@ spec:
           value: ''
         volumeMounts:
         - name: cephfs
-          mountPath: /cephfs
+          mountPath: /mnt/cephfs
         ports:
         - containerPort: 8080
           protocol: TCP

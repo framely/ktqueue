@@ -8,7 +8,7 @@ from .cloner import GitCredentialProvider
 
 
 def get_log_versions(job_name):
-    log_dir = os.path.join('/cephfs/ktqueue/logs', job_name)
+    log_dir = os.path.join('/mnt/cephfs/ktqueue/logs', job_name)
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
     versions = []
@@ -20,7 +20,7 @@ def get_log_versions(job_name):
 
 
 async def save_job_log(job_name, pod_name, k8s_client):
-    log_dir = os.path.join('/cephfs/ktqueue/logs', job_name)
+    log_dir = os.path.join('/mnt/cephfs/ktqueue/logs', job_name)
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
     resp = await k8s_client.call_api_raw(

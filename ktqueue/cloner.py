@@ -129,13 +129,13 @@ class Cloner:
         if self.repo_type == 'ssh':
             retcode, retlines = await self.git_with_ssh_key(
                 ssh_key_path=self.ssh_key_path,
-                cwd='/cephfs/ktqueue/repos',
+                cwd='/mnt/cephfs/ktqueue/repos',
                 args=['clone', self.repo, '--recursive', self.repo_hash],
 
             )
         else:
             retcode, retlines = await self.git_with_https(
-                cwd='/cephfs/ktqueue/repos',
+                cwd='/mnt/cephfs/ktqueue/repos',
                 args=['clone', self.repo_url, '--recursive', self.repo_hash],
             )
         if retcode != 0:
@@ -159,9 +159,9 @@ class Cloner:
             logging.error('fetch repo failed with retcode {}.'.format(retcode))
 
     async def clone_and_copy(self, archive_file=None, keep_archive=False):
-        if not os.path.exists('/cephfs/ktqueue/repos'):
-            os.makedirs('/cephfs/ktqueue/repos')
-        self.repo_path = os.path.join('/cephfs/ktqueue/repos', self.repo_hash)
+        if not os.path.exists('/mnt/cephfs/ktqueue/repos'):
+            os.makedirs('/mnt/cephfs/ktqueue/repos')
+        self.repo_path = os.path.join('/mnt/cephfs/ktqueue/repos', self.repo_hash)
 
         if self.repo_type == 'ssh':
             await self.prepare_ssh_key(self.repo)
@@ -183,10 +183,10 @@ class Cloner:
             if not self.commit_id:
                 raise Exception('Branch {branch} not found for {repo}.'.format(branch=self.branch, repo=self.repo))
 
-        if not os.path.exists('/cephfs/ktqueue/repo_archive'):
-            os.makedirs('/cephfs/ktqueue/repo_archive')
+        if not os.path.exists('/mnt/cephfs/ktqueue/repo_archive'):
+            os.makedirs('/mnt/cephfs/ktqueue/repo_archive')
         if archive_file is None:
-            archive_file = '/cephfs/ktqueue/repo_archive/{}.tar.gz'.format(self.commit_id)
+            archive_file = '/mnt/cephfs/ktqueue/repo_archive/{}.tar.gz'.format(self.commit_id)
 
         # Arcive commit_id
         logging.info('Arciving {}:{}'.format(self.repo, self.commit_id))

@@ -1,21 +1,21 @@
 # encoding: utf-8
 import json
+import logging
 import os
 import re
-import logging
-import bson
 from collections import defaultdict
 
+import bson
 import tornado.web
 import tornado.websocket
 
+from ktqueue import settings
 from ktqueue.cloner import Cloner
-from .utils import convert_asyncio_task
+from ktqueue.utils import KTQueueDefaultCredentialProvider
+from ktqueue.utils import k8s_delete_job
 from .utils import BaseHandler
 from .utils import apiauthenticated
-from ktqueue.utils import k8s_delete_job
-from ktqueue.utils import KTQueueDefaultCredentialProvider
-from ktqueue import settings
+from .utils import convert_asyncio_task
 
 
 def generate_job(name, command, node, gpu_num, image, repo, branch, commit_id,
@@ -24,11 +24,11 @@ def generate_job(name, command, node, gpu_num, image, repo, branch, commit_id,
 
     command_kube = 'cd $WORK_DIR && ' + command
 
-    job_dir = os.path.join('/cephfs/ktqueue/jobs/', name)
+    job_dir = os.path.join('/mnt/cephfs/ktqueue/jobs/', name)
     if not os.path.exists(job_dir):
         os.makedirs(job_dir)
 
-    output_dir = os.path.join('/cephfs/ktqueue/output', name)
+    output_dir = os.path.join('/mnt/cephfs/ktqueue/output', name)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
@@ -73,7 +73,7 @@ def generate_job(name, command, node, gpu_num, image, repo, branch, commit_id,
             },
         }
     else:
-        #resources
+        # resources
         resources = {
             'limits': {}
         }
@@ -88,7 +88,7 @@ def generate_job(name, command, node, gpu_num, image, repo, branch, commit_id,
     volumes.append(settings.sfs_volume)
     volumeMounts.append({
         'name': 'cephfs',
-        'mountPath': '/cephfs',
+        'mountPath': '/mnt/cephfs',
     })
 
     if not auto_restart: command_kube = command_kube + "\nexit 0"
@@ -161,11 +161,10 @@ async def clone_code(name, repo, branch, commit_id, jobs_collection, job_dir, cr
         if not commit_id:
             jobs_collection.update_one({'name': name}, {'$set': {'commit': cloner.commit_id}})
     else:
-        os.makedirs(os.path.join('/cephfs/ktqueue/jobs', name, 'code'))
+        os.makedirs(os.path.join('/mnt/cephfs/ktqueue/jobs', name, 'code'))
 
 
 class JobsHandler(BaseHandler):
-
     __job_name_pattern = re.compile(r'^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$')
 
     def initialize(self, k8s_client, mongo_client):
@@ -203,7 +202,8 @@ class JobsHandler(BaseHandler):
         if not self.__job_name_pattern.match(name):
             self.set_status(400)
             self.finish(
-                {"message": "illegal task name, regex used for validation is [a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*"})
+                {
+                    "message": "illegal task name, regex used for validation is [a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*"})
             return
 
         # job with same name is forbidden
@@ -225,7 +225,7 @@ class JobsHandler(BaseHandler):
         memory_limit = body_arguments.get('memoryLimit', None)
         auto_restart = body_arguments.get('autoRestart', False)
 
-        job_dir = os.path.join('/cephfs/ktqueue/jobs/', name)
+        job_dir = os.path.join('/mnt/cephfs/ktqueue/jobs/', name)
 
         job = generate_job(
             name=name, command=command, node=node, gpu_num=gpu_num, image=image,
@@ -295,7 +295,7 @@ class JobsHandler(BaseHandler):
             query['hide'] = False if hide == '0' else True
 
         if searchJobName:
-            query['name'] = re.compile(".*?%s.*?" %searchJobName, re.IGNORECASE)
+            query['name'] = re.compile(".*?%s.*?" % searchJobName, re.IGNORECASE)
 
         # tags
         if tags:
@@ -314,7 +314,7 @@ class JobsHandler(BaseHandler):
             if status == '$RunningExtra':
                 query.pop('hide', None)
                 query['status'] = {'$nin': [
-                    'Completed', 'ManualStop', 'FetchError', 
+                    'Completed', 'ManualStop', 'FetchError',
                     re.compile(".*?Failed.*?", re.IGNORECASE),
                     re.compile(".*?terminated.*?", re.IGNORECASE),
                 ]}
@@ -358,7 +358,8 @@ class JobsHandler(BaseHandler):
         ret = self.jobs_collection.find_one({'_id': bson.ObjectId(body_arguments['_id'])})
         ret['_id'] = str(ret['_id'])
 
-        self.tags_collection.update_one({'name': 'tags'}, {'$addToSet': {'data': {'$each': body_arguments['tags']}}}, upsert = True)
+        self.tags_collection.update_one({'name': 'tags'}, {'$addToSet': {'data': {'$each': body_arguments['tags']}}},
+                                        upsert=True)
         self.finish(ret)
 
 
@@ -411,7 +412,8 @@ class JobLogHandler(BaseHandler):
             pod_name = pods['items'][0]['metadata']['name']
             resp = await self.k8s_client.call_api_raw(
                 method='GET',
-                api='/api/v1/namespaces/{namespace}/pods/{pod_name}/log'.format(namespace=settings.job_namespace, pod_name=pod_name),
+                api='/api/v1/namespaces/{namespace}/pods/{pod_name}/log'.format(namespace=settings.job_namespace,
+                                                                                pod_name=pod_name),
                 params=params, timeout=timeout
             )
             return resp
@@ -420,7 +422,8 @@ class JobLogHandler(BaseHandler):
     @convert_asyncio_task
     async def get(self, job, version=None):
         if version and version != 'current':
-            with open(os.path.join('/cephfs/ktqueue/logs', job, 'log.{version}.txt'.format(version=version)), 'rb') as f:
+            with open(os.path.join('/mnt/cephfs/ktqueue/logs', job, 'log.{version}.txt'.format(version=version)),
+                      'rb') as f:
                 self.finish(f.read())
             return
         self.follow = self.get_argument('follow', None) == 'true'
@@ -484,6 +487,7 @@ class StopJobHandler(BaseHandler):
         self.jobs_collection.update_one({'name': job}, {'$set': {'status': 'ManualStop'}})
         self.finish({'message': 'Job {} successful deleted.'.format(job)})
 
+
 class RestartJobHandler(BaseHandler):
 
     def initialize(self, k8s_client, mongo_client):
@@ -498,7 +502,7 @@ class RestartJobHandler(BaseHandler):
         await k8s_delete_job(self.k8s_client, job_name)
         job = defaultdict(lambda: None)
         job.update(self.jobs_collection.find_one({'name': job_name}))
-        job_dir = os.path.join('/cephfs/ktqueue/jobs/', job['name'])
+        job_dir = os.path.join('/mnt/cephfs/ktqueue/jobs/', job['name'])
 
         job_description = generate_job(
             name=job['name'], command=job['command'], node=job['node'], gpu_num=job['gpuNum'], image=job['image'],
@@ -538,7 +542,7 @@ class TensorBoardHandler(BaseHandler):
     @apiauthenticated
     async def post(self, job):
         body_arguments = json.loads(self.request.body.decode('utf-8'))
-        logdir = body_arguments.get('logdir', '/cephfs/ktqueue/logs/{job}/train'.format(job=job))
+        logdir = body_arguments.get('logdir', '/mnt/cephfs/ktqueue/logs/{job}/train'.format(job=job))
         command = 'tensorboard --logdir {logdir} --host 0.0.0.0'.format(logdir=logdir)
 
         job_record = defaultdict(lambda: None)
@@ -588,7 +592,8 @@ class TensorBoardHandler(BaseHandler):
         if pods.get('items', None):
             pod_name = pods['items'][0]['metadata']['name']
             ret = await self.k8s_client.call_api(
-                api='/api/v1/namespaces/{namespace}/pods/{name}'.format(namespace=settings.job_namespace, name=pod_name),
+                api='/api/v1/namespaces/{namespace}/pods/{name}'.format(namespace=settings.job_namespace,
+                                                                        name=pod_name),
                 method='DELETE',
             )
             self.write(ret)

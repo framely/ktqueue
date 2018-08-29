@@ -1,4 +1,5 @@
 # encoding: utf-8
+import json
 from collections import defaultdict
 
 import tornado.web
@@ -47,12 +48,15 @@ class NodesHandler(tornado.web.RequestHandler):
             api='/api/v1/nodes',
             method='GET',
         )
-
-        self.write({'items': [{
-            'name': node['metadata']['name'],
-            'labels': node['metadata']['labels'],
-            'gpu_used': gpu_dict.get(node['metadata']['name'], 0),
-            'jobs': node_used_gpus[node['metadata']['name']],
-            'gpu_capacity': node['status']['capacity'].get('nvidia.com/gpu', 0),
-        } for node in ret['items']
-        ]})
+        items = []
+        for node in ret['items']:
+            print(node['metadata']['name'])
+            if node['metadata']['name'].find('master') == -1:
+                items.append({
+                    'name': node['metadata']['name'],
+                    'labels': node['metadata']['labels'],
+                    'gpu_used': gpu_dict.get(node['metadata']['name'], 0),
+                    'jobs': node_used_gpus[node['metadata']['name']],
+                    'gpu_capacity': node['status']['capacity'].get('nvidia.com/gpu', 0),
+                })
+        self.write(json.dumps({'items': items}))

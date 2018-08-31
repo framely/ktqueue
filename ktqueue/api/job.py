@@ -16,6 +16,7 @@ from ktqueue.utils import k8s_delete_job
 from .utils import BaseHandler
 from .utils import apiauthenticated
 from .utils import convert_asyncio_task
+from .node import node_info
 
 
 def generate_job(name, command, node, gpu_num, image, repo, branch, commit_id,
@@ -77,10 +78,10 @@ def generate_job(name, command, node, gpu_num, image, repo, branch, commit_id,
         resources = {
             'limits': {}
         }
+        command_kube = 'export CUDA_VISIBLE_DEVICES= && ' + command_kube
 
     if cpu_limit:
         resources['limits']['cpu'] = cpu_limit
-
     if memory_limit:
         resources['limits']['memory'] = memory_limit
 

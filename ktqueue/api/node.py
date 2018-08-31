@@ -8,6 +8,8 @@ from .utils import convert_asyncio_task
 
 node_used_gpus = defaultdict(lambda: dict())
 
+node_info = {}
+
 
 class NodesHandler(tornado.web.RequestHandler):
 
@@ -50,7 +52,6 @@ class NodesHandler(tornado.web.RequestHandler):
         )
         items = []
         for node in ret['items']:
-            print(node['metadata']['name'])
             if node['metadata']['name'].find('master') == -1:
                 items.append({
                     'name': node['metadata']['name'],
@@ -59,4 +60,5 @@ class NodesHandler(tornado.web.RequestHandler):
                     'jobs': node_used_gpus[node['metadata']['name']],
                     'gpu_capacity': node['status']['capacity'].get('nvidia.com/gpu', 0),
                 })
+                node_info[node['metadata']['name']] = node
         self.write(json.dumps({'items': items}))

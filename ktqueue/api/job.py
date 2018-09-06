@@ -73,7 +73,7 @@ def generate_job(name, command, node, gpu_num, image, repo, branch, commit_id,
                 'nvidia.com/gpu': gpu_num,
             },
         }
-        command_kube = 'export CUDA_VISIBLE_DEVICES=%s && %s' % (gpu_num, command_kube)
+        # command_kube = 'export CUDA_VISIBLE_DEVICES=%s && %s' % (gpu_num, command_kube)
     else:
         # resources
         resources = {

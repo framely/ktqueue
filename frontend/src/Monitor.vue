@@ -15,7 +15,7 @@
                         </el-table-column>
                     </el-table>
                     <el-table :data="v.nvidia.jobs" class="table-box-e">
-                        <el-table-column prop="name" label="Pid" width="75px">
+                        <el-table-column prop="name" label="Pid" width="100px">
                         </el-table-column>
                         <el-table-column prop="cpu" label="CpuUser" width="110px">
                         </el-table-column>

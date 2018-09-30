@@ -30,8 +30,11 @@
     <el-form-item label="Command" required>
       <el-input type="textarea" :rows=3 v-model="internalData.command" :disabled="disabledFields.command"></el-input>
     </el-form-item>
-    <el-form-item label="Image" required>
-      <el-select v-model="internalData.image" clearable filterable style="width: 100%;">
+    <el-form-item label="Image" required v-if="images && images.length">
+      <el-input v-model="internalData.image" />
+    </el-form-item>
+    <el-form-item v-else>
+      <el-select v-model="internalData.image" clearable filterable  style="width: 100%;">
         <el-option v-for="item in images" :label="item" :value="item" :key="item"/>
       </el-select>
     </el-form-item>

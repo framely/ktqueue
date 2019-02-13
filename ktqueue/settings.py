@@ -9,6 +9,13 @@ oauth2_clinet_id = os.environ.get('KTQ_OAUTH2_CLIENT_ID', '')
 oauth2_client_secret = os.environ.get('KTQ_OAUTH2_CLIENT_SECRET', '')
 oauth2_callback = os.environ.get('KTQ_OAUTH2_CALLBACK', None)
 sfs_type = os.environ.get('KTQ_SHAREFS_TYPE', 'hostPath')
+
+mail_host = 'smtp.gmail.com:465'
+mail_user = 'ktqueue-amdin'
+mail_sender = 'report.infra.01@naturali.io'
+mail_password = 'report.infra.01::\"\"'
+mail_receivers = ['yingkai.luan@naturali.io']
+
 sfs_volume = {}
 if sfs_type == 'hostPath':
     sfs_volume = {

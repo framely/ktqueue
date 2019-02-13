@@ -2,6 +2,9 @@
 import os
 import re
 import logging
+import smtplib
+
+from email.mime.text import MIMEText
 
 from ktqueue import settings
 from .cloner import GitCredentialProvider
@@ -144,3 +147,17 @@ class KTQueueDefaultCredentialProvider(GitCredentialProvider):
         if not self._https_password:
             self.prepare_credential()
         return self._https_password
+
+
+def send_email(message):
+    email_message = MIMEText(message, 'plain', 'utf-8')
+    email_message['Subject'] = 'ktqueue report'
+    email_message['From'] = settings.mail_user
+    email_message['To'] = settings.mail_receivers[0]
+    try:
+        smtp_obj = smtplib.SMTP_SSL(settings.mail_host)
+        smtp_obj.login(settings.mail_sender, settings.mail_password)
+        smtp_obj.sendmail(settings.mail_sender, settings.mail_receivers, email_message.as_string())
+        smtp_obj.quit()
+    except smtplib.SMTPException as e:
+        print('send email={mail_message} err '.format(mail_message = email_message.as_string()), e)

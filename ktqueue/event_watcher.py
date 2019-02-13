@@ -2,11 +2,12 @@
 import logging
 import asyncio
 import json
-
+import threading
 import pymongo
 
 from ktqueue.utils import save_job_log
 from ktqueue.utils import k8s_delete_job
+from ktqueue.utils import send_email
 from ktqueue import settings
 
 
@@ -116,6 +117,9 @@ async def watch_pod(k8s_client):
             job_update['status'] = 'Running'
         else:
             job_update['status'] = status_str
+            message = 'task {} crash!\n the possible reason may be {}\n please fix it!'.format(job_name, status_str)
+            t = threading.Thread(target=send_email, args=(message,))
+            t.start()
 
         jobs_collection.update_one({'name': job_name}, {'$set': job_update})
         if event['type'] == 'DELETED' and status[1] != 'Completed':

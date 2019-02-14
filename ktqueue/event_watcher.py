@@ -113,13 +113,17 @@ async def watch_pod(k8s_client):
         # update status
         if status == ('terminated', 'Completed'):
             job_update['status'] = 'Completed'
+            message = 'task {} crash!\n the possible reason may be {}\n please fix it!'.format(job_name, status_str)
+            t = threading.Thread(target=send_email, args=(message,))
+            t.start()
         elif status == ('running', None):
             job_update['status'] = 'Running'
         else:
             job_update['status'] = status_str
-            message = 'task {} crash!\n the possible reason may be {}\n please fix it!'.format(job_name, status_str)
-            t = threading.Thread(target=send_email, args=(message,))
-            t.start()
+            if status_str != 'waiting: ContainerCreating':
+                message = 'task {} crash!\n the possible reason may be {}\n please fix it!'.format(job_name, status_str)
+                t = threading.Thread(target=send_email, args=(message,))
+                t.start()
 
         jobs_collection.update_one({'name': job_name}, {'$set': job_update})
         if event['type'] == 'DELETED' and status[1] != 'Completed':

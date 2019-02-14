@@ -150,6 +150,8 @@ class KTQueueDefaultCredentialProvider(GitCredentialProvider):
 
 
 def send_email(message):
+    if not settings.mail_receivers:
+        return
     email_message = MIMEText(message, 'plain', 'utf-8')
     email_message['Subject'] = 'ktqueue report'
     email_message['From'] = settings.mail_user

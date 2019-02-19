@@ -117,7 +117,7 @@ async def watch_pod(k8s_client):
             job_update['status'] = 'Running'
         else:
             job_update['status'] = status_str
-            if status_str != 'waiting: ContainerCreating':
+            if status_str != 'waiting: ContainerCreating' and 'yingkai' in job_name:
                 message = 'task {} crash!\n the possible reason may be {}\n please fix it!'.format(job_name, status_str)
                 t = threading.Thread(target=send_email, args=(message,))
                 t.start()
